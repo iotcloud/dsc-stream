@@ -106,7 +106,7 @@ public class BroadCastTopology {
 
     // we are going to deploy on a real cluster
     if (!local) {
-      conf.setNumWorkers(32);
+      conf.setNumStmgrs(4);
       StormSubmitter.submitTopology(name, conf, builder.createTopology());
     } else {
       // deploy on a local cluster
