@@ -131,8 +131,8 @@ public class DataGenerator {
         }
       }
 
-      resultBestIO.writeResult((receiveTime - trace.getTime()) + "," + sb.toString());
       long l = Long.parseLong(time.toString());
+      resultBestIO.writeResult((receiveTime - l) + "," + sb.toString());
       sum += (receiveTime - l);
       count++;
       System.out.println((receiveTime - l) + "," + (sum / count) + "," + sb.toString());
