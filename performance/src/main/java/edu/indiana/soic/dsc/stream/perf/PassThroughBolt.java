@@ -44,10 +44,8 @@ public class PassThroughBolt extends BaseRichBolt {
     if (last) {
       SingleTrace singleTrace = new SingleTrace();
       byte []b = Utils.serialize(kryo, singleTrace);
-      System.out.println("Sending single trace");
       list.add(b);
     } else {
-      System.out.println("Sending body");
       list.add(body);
     }
     list.add(sensorId);
