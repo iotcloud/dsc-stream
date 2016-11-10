@@ -33,4 +33,4 @@ bolts:
         properties:
           ackMode: "auto"
 conf:
-    rabbitmq_url: "amqp://d001:5672"
+    rabbitmq_url: "amqp://localhost:5672"

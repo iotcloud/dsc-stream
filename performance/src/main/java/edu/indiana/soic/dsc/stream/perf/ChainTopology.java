@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class BroadCastTopology {
+public class ChainTopology {
   private static Logger LOG = LoggerFactory.getLogger(BroadCastTopology.class);
 
   public static void main(String[] args) throws Exception {
@@ -36,37 +36,18 @@ public class BroadCastTopology {
     Options options = new Options();
     options.addOption(Constants.ARGS_NAME, true, "Name of the topology");
     options.addOption(Constants.ARGS_LOCAL, false, "Weather we want run locally");
-    options.addOption(Constants.ARGS_DS_MODE, true, "The distributed mode, specify 0, 1, 2, 3 etc");
     options.addOption(Constants.ARGS_PARALLEL, true, "No of parallel nodes");
-    options.addOption(Constants.ARGS_IOT_CLOUD, false, "Weather we run through IoTCloud");
-    options.addOption(Utils.createOption(Constants.ARGS_BINARY_TREE, false, "Binary tree", false));
-    options.addOption(Utils.createOption(Constants.ARGS_PIPE_LINE, false, "Pipe line", false));
-    options.addOption(Utils.createOption(Constants.ARGS_FLAT_TREE, false, "Flat tree", false));
-    options.addOption(Utils.createOption(Constants.ARGS_FLAT_TREE_BRANCH, true, "Flat tree branch", false));
-    options.addOption(Utils.createOption(Constants.ARGS_ASYNCHRONOUS, false, "Asynchronous", false));
-    options.addOption(Utils.createOption(Constants.ARGS_PIPE_SPLIT, false, "Split pipe", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
     String name = cmd.getOptionValue(Constants.ARGS_NAME);
     boolean local = cmd.hasOption(Constants.ARGS_LOCAL);
-    String dsModeValue = cmd.getOptionValue(Constants.ARGS_DS_MODE);
-    int dsMode = Integer.parseInt(dsModeValue);
     String pValue = cmd.getOptionValue(Constants.ARGS_PARALLEL);
     int p = Integer.parseInt(pValue);
-    boolean iotCloud = cmd.hasOption(Constants.ARGS_IOT_CLOUD);
-    boolean pipeSplit = cmd.hasOption(Constants.ARGS_PIPE_SPLIT);
-    boolean asynchronous = cmd.hasOption(Constants.ARGS_ASYNCHRONOUS);
 
     StreamTopologyBuilder streamTopologyBuilder;
-    if (dsMode == 0) {
-      streamTopologyBuilder = new StreamTopologyBuilder();
-      if (!asynchronous) {
-        buildTestTopology(builder, streamTopologyBuilder, p, iotCloud);
-      } else {
-        buildTestAsyncTopology(builder, streamTopologyBuilder, p, iotCloud);
-      }
-    }
+    streamTopologyBuilder = new StreamTopologyBuilder();
+    buildTestAsyncTopology(builder, streamTopologyBuilder, p);
 
     Config conf = new Config();
     conf.setDebug(false);
@@ -79,29 +60,6 @@ public class BroadCastTopology {
       conf.put(Constants.ARGS_PARALLEL, p);
     }
 
-    // we will not use the constants because we are going to compile agains both modified and un-modified versions
-    boolean flatTree = cmd.hasOption(Constants.ARGS_FLAT_TREE);
-    if (flatTree) {
-      conf.put("topology.collective.use.flaTree", true);
-      String branchString = cmd.getOptionValue(Constants.ARGS_FLAT_TREE_BRANCH);
-      if (branchString != null) {
-        int branch = Integer.parseInt(branchString);
-        conf.put("topology.collective.worker.branch", branch);
-      } else {
-        conf.put("topology.collective.worker.branch", -1);
-      }
-    }
-    boolean pipe = cmd.hasOption(Constants.ARGS_PIPE_LINE);
-    if (pipe) {
-      conf.put("topology.collective.use.pipeline", true);
-      if (pipeSplit) {
-        conf.put("topology.collective.use.pipeline.split", true);
-      }
-    }
-    boolean binary = cmd.hasOption(Constants.ARGS_BINARY_TREE);
-    if (binary) {
-      conf.put("topology.collective.use.binary", true);
-    }
     // add the serializers
     addSerializers(conf);
 
@@ -121,47 +79,8 @@ public class BroadCastTopology {
     }
   }
 
-  private static void buildTestTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
-                                        int parallel, boolean iotCloud) {
-    // first create a rabbitmq Spout
-    ErrorReporter reporter = new ErrorReporter() {
-      @Override
-      public void reportError(Throwable throwable) {
-        LOG.error("error occured", throwable);
-      }
-    };
-    IRichSpout dataSpout;
-    IRichSpout controlSpout;
-    IRichBolt valueSendBolt;
-    if (!iotCloud) {
-      dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0), reporter);
-      controlSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(3), reporter);
-      valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2), reporter);
-    } else {
-      StreamComponents components = streamTopologyBuilder.buildComponents();
-      dataSpout = components.getSpouts().get(Constants.Topology.RECEIVE_SPOUT);
-      controlSpout = components.getSpouts().get(Constants.Topology.CONTROL_SPOUT);
-      valueSendBolt = components.getBolts().get(Constants.Topology.RESULT_SEND_BOLT);
-    }
-
-    WorkerBolt workerBolt = new WorkerBolt();
-    GatherBolt gatherBolt = new GatherBolt();
-    BroadCastBolt broadCastBolt = new BroadCastBolt();
-
-    builder.setSpout(Constants.Topology.RECEIVE_SPOUT, dataSpout, 1);
-    builder.setBolt(Constants.Topology.BROADCAST_BOLT, broadCastBolt, 1).
-        shuffleGrouping(Constants.Topology.RECEIVE_SPOUT).
-        shuffleGrouping(Constants.Topology.GATHER_BOLT, Constants.Fields.READY_STREAM);
-    builder.setBolt(Constants.Topology.WORKER_BOLT, workerBolt, parallel).
-        allGrouping(Constants.Topology.BROADCAST_BOLT, Constants.Fields.BROADCAST_STREAM);
-    builder.setBolt(Constants.Topology.GATHER_BOLT, gatherBolt, 1).
-        shuffleGrouping(Constants.Topology.WORKER_BOLT, Constants.Fields.GATHER_STREAM);
-    builder.setBolt(Constants.Topology.RESULT_SEND_BOLT, valueSendBolt, 1).
-        shuffleGrouping(Constants.Topology.GATHER_BOLT, Constants.Fields.SEND_STREAM);
-  }
-
   private static void buildTestAsyncTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
-                                             int parallel, boolean iotCloud) {
+                                             int parallel) {
     // first create a rabbitmq Spout
     ErrorReporter reporter = new ErrorReporter() {
       @Override
@@ -170,36 +89,25 @@ public class BroadCastTopology {
       }
     };
     IRichSpout dataSpout;
-    IRichSpout controlSpout;
     IRichBolt valueSendBolt;
-    if (!iotCloud) {
-      dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0), reporter);
-      controlSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(3), reporter);
-      valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2), reporter);
-    } else {
-      StreamComponents components = streamTopologyBuilder.buildComponents();
-      dataSpout = components.getSpouts().get(Constants.Topology.RECEIVE_SPOUT);
-      controlSpout = components.getSpouts().get(Constants.Topology.CONTROL_SPOUT);
-      valueSendBolt = components.getBolts().get(Constants.Topology.RESULT_SEND_BOLT);
-    }
 
-    WorkerBolt workerBolt = new WorkerBolt();
-    GatherBolt gatherBolt = new GatherBolt();
-    BroadCastBolt broadCastBolt = new BroadCastBolt();
-    broadCastBolt.setSynchronous(false);
-    gatherBolt.setSynchronous(false);
-
+    dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0), reporter);
+    valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2), reporter);
+    // set the first spout
     builder.setSpout(Constants.Topology.RECEIVE_SPOUT, dataSpout, 1);
-    //builder.setSpout(Constants.Topology.CONTROL_SPOUT, controlSpout, 1);
-    builder.setBolt(Constants.Topology.BROADCAST_BOLT, broadCastBolt, 1).
-        shuffleGrouping(Constants.Topology.RECEIVE_SPOUT).
-        shuffleGrouping(Constants.Topology.GATHER_BOLT, Constants.Fields.READY_STREAM);
-    builder.setBolt(Constants.Topology.WORKER_BOLT, workerBolt, parallel).
-        allGrouping(Constants.Topology.BROADCAST_BOLT, Constants.Fields.BROADCAST_STREAM);
-    builder.setBolt(Constants.Topology.GATHER_BOLT, gatherBolt, 1).
-        shuffleGrouping(Constants.Topology.WORKER_BOLT, Constants.Fields.GATHER_STREAM);
+
+    PassThroughBolt previousChainBolt = new PassThroughBolt();
+    builder.setBolt(Constants.Topology.CHAIN_BOLT + "_0", previousChainBolt, 1).
+        shuffleGrouping(Constants.Topology.RECEIVE_SPOUT);
+    for (int i = 1; i < parallel; i++) {
+      PassThroughBolt chainBolt = new PassThroughBolt();
+      builder.setBolt(Constants.Topology.CHAIN_BOLT + "_" + i, chainBolt, 1).
+          shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (i - 1), Constants.Fields.CHAIN_STREAM);
+      previousChainBolt = chainBolt;
+    }
+    previousChainBolt.setLast(true);
     builder.setBolt(Constants.Topology.RESULT_SEND_BOLT, valueSendBolt, 1).
-        shuffleGrouping(Constants.Topology.GATHER_BOLT, Constants.Fields.SEND_STREAM);
+        shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (parallel - 1), Constants.Fields.CHAIN_STREAM);
   }
 
   private static void addSerializers(Config config) {
@@ -363,4 +271,3 @@ public class BroadCastTopology {
     }
   }
 }
-

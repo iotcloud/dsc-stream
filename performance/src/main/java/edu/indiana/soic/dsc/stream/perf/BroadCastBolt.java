@@ -46,11 +46,11 @@ public class BroadCastBolt extends BaseRichBolt {
 
     if (synchronous) {
       if (stream.equals(Constants.Fields.READY_STREAM)) {
-        // LOG.info("Received READY, waiting for message");
+        LOG.info("Received READY, waiting for message");
         this.state = State.WAITING_FOR_READING;
         return;
       } else if (state == State.WAITING_FOR_READING) {
-        // LOG.info("Received message, emit and waiting for READY");
+        LOG.info("Received message, emit and waiting for READY");
         Object body = tuple.getValueByField(Constants.Fields.BODY);
         Object time = tuple.getValueByField(Constants.Fields.TIME_FIELD);
         BTrace trace = new BTrace();

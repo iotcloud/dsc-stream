@@ -3,6 +3,7 @@ package edu.indiana.soic.dsc.stream.perf;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import edu.indiana.soic.dsc.stream.perf.trace.ChainTrace;
 import org.apache.commons.cli.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,8 @@ public class Utils {
 
   public static void registerClasses(Kryo kryo) {
     kryo.register(BTrace.class);
+    kryo.register(ChainTrace.class);
+    kryo.register(SingleTrace.class);
   }
 
   public static Option createOption(String opt, boolean hasArg, String description, boolean required) {

@@ -23,6 +23,7 @@ public class Constants {
     public static final String BODY = "body";
     public static final String DATA_STREAM = "data";
     public static final String BROADCAST_STREAM = "broadcast";
+    public static final String CHAIN_STREAM = "chain";
     public static final String GATHER_STREAM = "gather";
     public static final String SEND_STREAM = "send";
     public static final String READY_STREAM = "ready";
@@ -41,5 +42,6 @@ public class Constants {
     public static final String RESULT_SEND_BOLT = "send_bolt";
     public static final String CONTROL_SPOUT = "control_spout";
     public static final String BROADCAST_BOLT = "broadcast_bolt";
+    public static final String CHAIN_BOLT = "chain_bolt";
   }
 }

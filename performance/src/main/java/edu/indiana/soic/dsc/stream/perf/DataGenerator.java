@@ -56,6 +56,11 @@ public class DataGenerator {
     Thread t = new Thread(new SendWorker());
     t.start();
     t.join();
+
+    while (count < messages) {
+      Thread.sleep(1000);
+    }
+    System.exit(0);
   }
 
   public static void main(String[] args) throws InterruptedException {
@@ -91,7 +96,7 @@ public class DataGenerator {
         }
         count++;
       }
-      System.exit(1);
+      // System.exit(1);
     }
   }
 
@@ -111,17 +116,19 @@ public class DataGenerator {
       SingleTrace trace = (SingleTrace) Utils.deSerialize(kryo, message.getBody(), SingleTrace.class);
       StringBuilder sb = new StringBuilder();
       long min = Long.MAX_VALUE;
-      for (long t : trace.getReceiveTimes()) {
-        if (t < min) {
-          min = t;
+      if (trace.getReceiveTimes() != null) {
+        for (long t : trace.getReceiveTimes()) {
+          if (t < min) {
+            min = t;
+          }
         }
-      }
-      long []times = trace.getReceiveTimes();
-      for (int i = 0; i < times.length; i++) {
-        times[i] = times[i] - min;
-      }
-      for (long t : trace.getReceiveTimes()) {
-        sb.append(t).append(",");
+        long[] times = trace.getReceiveTimes();
+        for (int i = 0; i < times.length; i++) {
+          times[i] = times[i] - min;
+        }
+        for (long t : trace.getReceiveTimes()) {
+          sb.append(t).append(",");
+        }
       }
 
       resultBestIO.writeResult((receiveTime - trace.getTime()) + "," + sb.toString());
