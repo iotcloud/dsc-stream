@@ -16,6 +16,11 @@ public class Constants {
   public static final String ARGS_ASYNCHRONOUS = "as";
   public static final String ARGS_PIPE_SPLIT = "pls";
 
+  public static final String ARGS_THRPUT_SIZES = "thrSizes";
+  public static final String ARGS_THRPUT_NO_MSGS = "thrN";
+  public static final String ARGS_THRPUT = "thr";
+  public static final String ARGS_THRPUT_FILENAME = "thrF";
+
   // configurations
   public static final String RABBITMQ_URL = "rabbitmq_url";
 
