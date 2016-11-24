@@ -18,6 +18,7 @@ public class Constants {
 
   public static final String ARGS_THRPUT_SIZES = "thrSizes";
   public static final String ARGS_THRPUT_NO_MSGS = "thrN";
+  public static final String ARGS_THRPUT_NO_EMPTY_MSGS = "thrNEmpty";
   public static final String ARGS_THRPUT = "thr";
   public static final String ARGS_THRPUT_FILENAME = "thrF";
 
@@ -38,6 +39,8 @@ public class Constants {
     public static final String SENSOR_ID_FIELD = "sensorID";
     public static final String TRACE_FIELD = "trace";
     public static final String MESSAGE_ID_FIELD = "messageID";
+    public static final String MESSAGE_SIZE_FIELD = "messageSize";
+    public static final String MESSAGE_INDEX_FIELD = "messageIndex";
   }
 
   public abstract class Topology {
