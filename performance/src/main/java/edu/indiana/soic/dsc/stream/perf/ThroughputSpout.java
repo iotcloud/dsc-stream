@@ -17,7 +17,7 @@ public class ThroughputSpout extends BaseRichSpout {
 
   private long noOfMessages = 0;
   private long noOfEmptyMessages = 1000;
-  private List<Long> messageSizes = new ArrayList<Long>();
+  private List<Integer> messageSizes = new ArrayList<Integer>();
   private int currentSendIndex = 0;
   private SpoutOutputCollector collector;
   private int currentCount = 0;
@@ -32,9 +32,9 @@ public class ThroughputSpout extends BaseRichSpout {
 
   @Override
   public void open(Map<String, Object> stormConf, TopologyContext topologyContext, SpoutOutputCollector outputCollector) {
-    noOfMessages = (Long) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
-    messageSizes = (List<Long>) stormConf.get(Constants.ARGS_THRPUT_SIZES);
-    noOfEmptyMessages = (Long) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
+    noOfMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
+    messageSizes = (List<Integer>) stormConf.get(Constants.ARGS_THRPUT_SIZES);
+    noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     this.collector = outputCollector;
   }
 
@@ -44,20 +44,27 @@ public class ThroughputSpout extends BaseRichSpout {
       return;
     }
 
+    int size = 1;
     if (currentCount == 0) {
       if (sendState == SendingType.EMPTY) {
+        LOG.info("Empty message generate");
         data = Utils.generateData(1);
       } else {
-        data = Utils.generateData(((Long)messageSizes.get(currentSendIndex)).intValue());
+        LOG.info("Data message generate");
+        size = messageSizes.get(currentSendIndex);
+        data = Utils.generateData(size);
+      }
+    } else {
+      if (sendState == SendingType.DATA) {
+        size = messageSizes.get(currentSendIndex);
       }
     }
     currentCount++;
 
     List<Object> list = new ArrayList<Object>();
-    long time = System.nanoTime();
     list.add(data);
     list.add(currentCount);
-    list.add(time);
+    list.add(size);
     collector.emit(Constants.Fields.CHAIN_STREAM, list);
 
     if (sendState == SendingType.EMPTY) {

@@ -52,4 +52,10 @@ public class Constants {
     public static final String BROADCAST_BOLT = "broadcast_bolt";
     public static final String CHAIN_BOLT = "chain_bolt";
   }
+
+  public abstract class ThroughputTopology {
+    public static final String THROUGHPUT_SPOUT = "throughputSpout";
+    public static final String THROUGHPUT_LAST = "throughputLastBolt";
+    public static final String THROUGHPUT_PASS_THROUGH = "throughputBolt";
+  }
 }

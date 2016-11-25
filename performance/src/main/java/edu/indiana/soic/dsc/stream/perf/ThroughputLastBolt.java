@@ -17,8 +17,8 @@ import java.util.Map;
 
 public class ThroughputLastBolt extends BaseRichBolt {
   private static Logger LOG = LoggerFactory.getLogger(ThroughputLastBolt.class);
-  private long noOfMessages = 0;
-  private long noOfEmptyMessages = 0;
+  private int noOfMessages = 0;
+  private int noOfEmptyMessages = 0;
   private String fileName;
   private long firstThroughputRecvTime = 0;
   private String currentOutPut;
@@ -31,7 +31,8 @@ public class ThroughputLastBolt extends BaseRichBolt {
 
   @Override
   public void prepare(Map stormConf, TopologyContext topologyContext, OutputCollector outputCollector) {
-    noOfMessages = (Long) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
+    noOfMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
+    noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
   }
 
@@ -54,29 +55,33 @@ public class ThroughputLastBolt extends BaseRichBolt {
       return;
     }
 
-    Long size = tuple.getLongByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+    Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
     Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
 
     if (receiveState == ReceiveType.EMPTY) {
+      LOG.info("Empty receive: " + messageCount);
       if (messageCount == noOfEmptyMessages) {
         receiveState = ReceiveType.DATA;
         firstThroughputRecvTime = System.nanoTime();
       }
     } else if (receiveState == ReceiveType.DATA) {
+      LOG.info("Data receive: " + messageCount);
       if (messageCount == noOfMessages) {
         receiveState = ReceiveType.EMPTY;
         long time = System.nanoTime() - firstThroughputRecvTime;
         firstThroughputRecvTime = 0;
-        currentOutPut = size + " " + (messageCount + 0.0)/ (time / 1000000000.0);
+        currentOutPut = size + " " + time + " " + (messageCount + 0.0)/ (time / 1000000000.0);
         writeFile(currentOutPut);
       }
     }
   }
 
   private void writeFile(String line) {
-    try {
-      Files.write(Paths.get(fileName), line.getBytes(), StandardOpenOption.APPEND);
-    }catch (IOException e) {
+    try(FileWriter fw = new FileWriter(fileName, true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        PrintWriter out = new PrintWriter(bw)) {
+      out.println(line);
+    } catch (IOException e) {
       //exception handling left as an exercise for the reader
       LOG.error("Failed to write to the file");
     }

@@ -33,8 +33,8 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
 
     List<Object> list = new ArrayList<Object>();
     list.add(body);
-    list.add(size);
     list.add(index);
+    list.add(size);
     collector.emit(Constants.Fields.CHAIN_STREAM, list);
   }
 
@@ -42,7 +42,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
   public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
     outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
         Constants.Fields.BODY,
-        Constants.Fields.MESSAGE_SIZE_FIELD,
-        Constants.Fields.MESSAGE_INDEX_FIELD));
+        Constants.Fields.MESSAGE_INDEX_FIELD,
+        Constants.Fields.MESSAGE_SIZE_FIELD));
   }
 }
