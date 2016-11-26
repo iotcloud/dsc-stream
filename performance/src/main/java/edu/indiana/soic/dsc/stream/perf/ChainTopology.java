@@ -16,12 +16,12 @@ import com.ss.commons.*;
 import com.ss.rabbitmq.ErrorReporter;
 import com.ss.rabbitmq.RabbitMQSpout;
 import com.ss.rabbitmq.bolt.RabbitMQBolt;
-import org.apache.activemq.store.kahadaptor.IntegerMarshaller;
+import edu.indiana.soic.dsc.stream.perf.latency.LatencyLastBolt;
+import edu.indiana.soic.dsc.stream.perf.latency.LatencySpout;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
-import org.apache.commons.net.io.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +57,10 @@ public class ChainTopology {
     StreamTopologyBuilder streamTopologyBuilder;
     streamTopologyBuilder = new StreamTopologyBuilder();
     if (throughput) {
+      // we are not going to track individual messages, message loss is inherent in the decoder
+      // also we cannot replay message because of the decoder
+      conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
+
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
       String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
@@ -72,13 +76,22 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
       buildThroughputTopology(builder, p);
     } else {
-      buildTestAsyncTopology(builder, streamTopologyBuilder, p);
+      String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
+      String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
+      String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
+      String msgSizesValues = cmd.getOptionValue(Constants.ARGS_THRPUT_SIZES);
+      List<Integer> msgSizes = new ArrayList<>();
+      String []split = msgSizesValues.split(",");
+      for (String s : split) {
+        msgSizes.add(Integer.parseInt(s));
+      }
+      conf.put(Constants.ARGS_THRPUT_NO_MSGS, Integer.parseInt(noMessages));
+      conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
+      conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
+      conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
+
+      buildLatencyTopology(builder, streamTopologyBuilder, p);
     }
-
-
-    // we are not going to track individual messages, message loss is inherent in the decoder
-    // also we cannot replay message because of the decoder
-    conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
 
     // put the no of parallel tasks as a config property
     if (cmd.hasOption(Constants.ARGS_PARALLEL)) {
@@ -104,8 +117,8 @@ public class ChainTopology {
     }
   }
 
-  private static void buildTestAsyncTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
-                                             int parallel) {
+  private static void buildLatencyFixedRateTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
+                                                    int parallel) {
     // first create a rabbitmq Spout
     ErrorReporter reporter = new ErrorReporter() {
       @Override
@@ -132,6 +145,30 @@ public class ChainTopology {
     }
     previousChainBolt.setLast(true);
     builder.setBolt(Constants.Topology.RESULT_SEND_BOLT, valueSendBolt, 1).
+        shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (parallel - 1), Constants.Fields.CHAIN_STREAM);
+  }
+
+  private static void buildLatencyTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
+                                             int parallel) {
+    IRichSpout dataSpout;
+    IRichBolt lastBolt;
+
+    dataSpout = new LatencySpout();
+    lastBolt = new LatencyLastBolt();
+    // set the first spout
+    builder.setSpout(Constants.Topology.RECEIVE_SPOUT, dataSpout, 1);
+
+    ThroughputPassthroughBolt previousChainBolt = new ThroughputPassthroughBolt();
+    builder.setBolt(Constants.Topology.CHAIN_BOLT + "_0", previousChainBolt, 1).
+        shuffleGrouping(Constants.Topology.RECEIVE_SPOUT, Constants.Fields.CHAIN_STREAM);
+
+    for (int i = 1; i < parallel; i++) {
+      ThroughputPassthroughBolt chainBolt = new ThroughputPassthroughBolt();
+      builder.setBolt(Constants.Topology.CHAIN_BOLT + "_" + i, chainBolt, 1).
+          shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (i - 1), Constants.Fields.CHAIN_STREAM);
+    }
+
+    builder.setBolt(Constants.Topology.RESULT_SEND_BOLT, lastBolt, 1).
         shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (parallel - 1), Constants.Fields.CHAIN_STREAM);
   }
 
