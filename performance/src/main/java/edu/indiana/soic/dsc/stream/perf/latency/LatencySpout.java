@@ -72,10 +72,10 @@ public class LatencySpout extends BaseRichSpout {
     int size = 1;
     if (currentCount == 0) {
       if (sendState == LatencySpout.SendingType.EMPTY) {
-        LOG.info("Empty message generate");
+        // LOG.info("Empty message generate");
         data = Utils.generateData(1);
       } else {
-        LOG.info("Data message generate");
+        // LOG.info("Data message generate");
         size = messageSizes.get(currentSendIndex);
         data = Utils.generateData(size);
       }

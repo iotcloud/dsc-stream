@@ -56,13 +56,13 @@ public class ThroughputLastBolt extends BaseRichBolt {
     Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
 
     if (receiveState == ReceiveType.EMPTY) {
-      LOG.info("Empty receive: " + messageCount);
+      // LOG.info("Empty receive: " + messageCount);
       if (messageCount == noOfEmptyMessages) {
         receiveState = ReceiveType.DATA;
         firstThroughputRecvTime = System.nanoTime();
       }
     } else if (receiveState == ReceiveType.DATA) {
-      LOG.info("Data receive: " + messageCount);
+      // LOG.info("Data receive: " + messageCount);
       if (messageCount == noOfMessages) {
         receiveState = ReceiveType.EMPTY;
         long time = System.nanoTime() - firstThroughputRecvTime;
