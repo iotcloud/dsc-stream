@@ -31,7 +31,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
 
     List<Object> list = new ArrayList<Object>();
     byte []b = (byte[]) body;
-    if (!messageSizes.contains(b.length)) {
+    if (!messageSizes.contains(b.length) && b.length != 1) {
       LOG.error("The message size is in-correct");
     }
     list.add(body);
