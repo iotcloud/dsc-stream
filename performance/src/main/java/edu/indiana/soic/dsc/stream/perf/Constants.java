@@ -20,7 +20,7 @@ public class Constants {
   public static final String ARGS_THRPUT_SIZES = "thrSizes";
   public static final String ARGS_THRPUT_NO_MSGS = "thrN";
   public static final String ARGS_THRPUT_NO_EMPTY_MSGS = "thrNEmpty";
-  public static final String ARGS_THRPUT = "thr";
+  public static final String ARGS_MODE = "mode";
   public static final String ARGS_THRPUT_FILENAME = "thrF";
 
   // configurations

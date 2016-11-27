@@ -38,7 +38,7 @@ public class ChainTopology {
     options.addOption(Constants.ARGS_LOCAL, false, "Weather we want run locally");
     options.addOption(Constants.ARGS_PARALLEL, true, "No of parallel nodes");
     options.addOption(Constants.ARGS_SREAM_MGRS, true, "No of stream managers");
-    options.addOption(Utils.createOption(Constants.ARGS_THRPUT, false, "Throughput mode", false));
+    options.addOption(Utils.createOption(Constants.ARGS_MODE, true, "Throughput mode", false));
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_FILENAME, true, "Throughput file name", false));
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, true, "Throughput empty messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_NO_MSGS, true, "Throughput no of messages", false));
@@ -50,7 +50,7 @@ public class ChainTopology {
     boolean local = cmd.hasOption(Constants.ARGS_LOCAL);
     String pValue = cmd.getOptionValue(Constants.ARGS_PARALLEL);
     int p = Integer.parseInt(pValue);
-    boolean throughput = cmd.hasOption(Constants.ARGS_THRPUT);
+    String throughput = cmd.getOptionValue(Constants.ARGS_MODE);
     int streamManagers = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_SREAM_MGRS));
 
     Config conf = new Config();
@@ -58,7 +58,7 @@ public class ChainTopology {
 
     StreamTopologyBuilder streamTopologyBuilder;
     streamTopologyBuilder = new StreamTopologyBuilder();
-    if (throughput) {
+    if (throughput.equals("t")) {
       // we are not going to track individual messages, message loss is inherent in the decoder
       // also we cannot replay message because of the decoder
       conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
@@ -77,7 +77,7 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
       buildThroughputTopology(builder, p);
-    } else {
+    } else if (throughput.equals("l")){
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
       String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
@@ -93,6 +93,8 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
 
       buildLatencyTopology(builder, streamTopologyBuilder, p);
+    } else if (throughput.equals("lf")) {
+      buildLatencyFixedRateTopology(builder, streamTopologyBuilder, p);
     }
 
     // put the no of parallel tasks as a config property
