@@ -136,7 +136,11 @@ public class LatencySpout extends BaseRichSpout {
       }
       currentAckCount++;
     }
-    super.ack(o);
+  }
+
+  @Override
+  public void fail(Object o) {
+    super.fail(o);
   }
 
   @Override

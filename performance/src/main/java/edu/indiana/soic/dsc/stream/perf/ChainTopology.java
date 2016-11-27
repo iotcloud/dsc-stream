@@ -79,6 +79,7 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
       buildThroughputTopology(builder, p);
     } else if (throughput.equals("l")){
+      conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, true);
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
       String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);

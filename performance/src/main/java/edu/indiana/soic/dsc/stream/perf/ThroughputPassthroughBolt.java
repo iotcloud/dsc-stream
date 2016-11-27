@@ -6,7 +6,6 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import com.esotericsoftware.kryo.Kryo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,14 +14,11 @@ import java.util.Map;
 public class ThroughputPassthroughBolt extends BaseRichBolt {
   private TopologyContext context;
   private OutputCollector collector;
-  private Kryo kryo;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
     this.context = topologyContext;
     this.collector = outputCollector;
-    this.kryo = new Kryo();
-    Utils.registerClasses(kryo);
   }
 
   @Override
@@ -35,7 +31,10 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     list.add(body);
     list.add(index);
     list.add(size);
-    collector.emit(Constants.Fields.CHAIN_STREAM, list);
+    List<Tuple> anchors = new ArrayList<>();
+    anchors.add(tuple);
+    collector.emit(Constants.Fields.CHAIN_STREAM, anchors, list);
+    collector.ack(tuple);
   }
 
   @Override
@@ -45,4 +44,6 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
         Constants.Fields.MESSAGE_INDEX_FIELD,
         Constants.Fields.MESSAGE_SIZE_FIELD));
   }
+
+
 }
