@@ -37,6 +37,9 @@ public class LatencySpout extends BaseRichSpout {
   private String fileName;
   // we count the acks
   private int currentAckCount = 0;
+  private long lastSend = System.nanoTime();
+  // send interval in nano seconds
+  private long sendInterval;
 
   private enum SendingType {
     DATA,
@@ -51,6 +54,7 @@ public class LatencySpout extends BaseRichSpout {
     messageSizes = (List<Integer>) stormConf.get(Constants.ARGS_THRPUT_SIZES);
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
+    sendInterval = (Long) stormConf.get(Constants.ARGS_SEND_INTERVAL);
 
     this.collector = outputCollector;
   }
@@ -67,6 +71,9 @@ public class LatencySpout extends BaseRichSpout {
         Thread.sleep(1);
       } catch (InterruptedException ignore) {}
       return;
+    }
+    // wait until time passed
+    while (sendInterval > 0 && (System.nanoTime() - lastSend) < sendInterval) {
     }
 
     int size = 1;
@@ -95,7 +102,10 @@ public class LatencySpout extends BaseRichSpout {
     if (sendState == SendingType.DATA) {
       sendTimes.put(id, new Send(id, size, currentCount, System.nanoTime()));
     }
+    System.out.println("Sending...");
     collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
+    // update the last send time
+    lastSend = System.nanoTime();
 
     if (sendState == LatencySpout.SendingType.EMPTY) {
       if (currentCount >= noOfEmptyMessages) {

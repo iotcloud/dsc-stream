@@ -43,6 +43,7 @@ public class ChainTopology {
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, true, "Throughput empty messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_NO_MSGS, true, "Throughput no of messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_SIZES, true, "Throughput no of messages", false));
+    options.addOption(Utils.createOption(Constants.ARGS_SEND_INTERVAL, true, "Send interval of messages", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -82,6 +83,7 @@ public class ChainTopology {
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
       String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
       String msgSizesValues = cmd.getOptionValue(Constants.ARGS_THRPUT_SIZES);
+      String sendInterval = cmd.getOptionValue(Constants.ARGS_SEND_INTERVAL);
       List<Integer> msgSizes = new ArrayList<>();
       String []split = msgSizesValues.split(",");
       for (String s : split) {
@@ -91,6 +93,12 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
       conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
+      if (sendInterval != null) {
+        // convert millis to nano
+        conf.put(Constants.ARGS_SEND_INTERVAL, Long.parseLong(sendInterval) * 1000000);
+      } else {
+        conf.put(Constants.ARGS_SEND_INTERVAL, 0);
+      }
 
       buildLatencyTopology(builder, streamTopologyBuilder, p);
     } else if (throughput.equals("lf")) {

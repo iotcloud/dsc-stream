@@ -22,6 +22,7 @@ public class Constants {
   public static final String ARGS_THRPUT_NO_EMPTY_MSGS = "thrNEmpty";
   public static final String ARGS_MODE = "mode";
   public static final String ARGS_THRPUT_FILENAME = "thrF";
+  public static final String ARGS_SEND_INTERVAL = "int";
 
   // configurations
   public static final String RABBITMQ_URL = "rabbitmq_url";
