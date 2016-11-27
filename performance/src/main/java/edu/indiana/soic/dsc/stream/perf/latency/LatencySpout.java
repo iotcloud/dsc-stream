@@ -73,7 +73,8 @@ public class LatencySpout extends BaseRichSpout {
       return;
     }
     // wait until time passed
-    while (sendInterval > 0 && (System.nanoTime() - lastSend) < sendInterval) {
+    if (sendInterval > 0 && (System.nanoTime() - lastSend) < sendInterval) {
+      return;
     }
 
     int size = 1;
