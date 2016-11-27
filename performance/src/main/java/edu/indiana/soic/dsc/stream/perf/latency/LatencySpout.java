@@ -139,11 +139,8 @@ public class LatencySpout extends BaseRichSpout {
       long receiveTime = System.nanoTime();
       int currentSize = send.size;
       latencies.add((receiveTime - send.time));
-      int currentFailCount = failedCounts.get(currentSize);
-      currentFailCount++;
-      failedCounts.put(currentSize, currentFailCount);
       // we have received all the times
-      if (latencies.size() == noOfMessages + currentFailCount) {
+      if (latencies.size() == noOfMessages) {
         writeLatencies(currentSize + "", latencies);
         latencies.clear();
         currentAckCount = 0;
@@ -161,7 +158,11 @@ public class LatencySpout extends BaseRichSpout {
       int currentSize = send.size;
       // latencies.add((receiveTime - send.time));
       // we have received all the times
-      if (latencies.size() == noOfMessages) {
+      int currentFailCount = failedCounts.get(currentSize);
+      currentFailCount++;
+      failedCounts.put(currentSize, currentFailCount);
+
+      if (latencies.size() == noOfMessages + currentFailCount) {
         writeLatencies(currentSize + "", latencies);
         latencies.clear();
         currentAckCount = 0;
