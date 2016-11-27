@@ -1,7 +1,7 @@
 
-folder="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/results/rdma4/"
-folder="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/rdma2/"
-#folder="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/tcp4/"
+folder="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/results/tcp8/"
+folder="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/rdma3/"
+folder="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/tcp5/"
 
 def average(file_name, upperbound):
     with open(file_name, "r") as in_f:
@@ -17,8 +17,8 @@ def average(file_name, upperbound):
         avg_of_numbers = 0
         if len(numbers) > 0:
             sum_of_numbers = sum(numbers)
-            avg_of_numbers = sum(numbers[:(len(numbers) - 100)])/(len(numbers) - 100)
-            print min(numbers[:(len(numbers) - 100)])
+            avg_of_numbers = sum(numbers[100:(len(numbers) - 100)])/(len(numbers) - 100)
+            # print min(numbers[:(len(numbers) - 100)])
     return avg_of_numbers
 
 def main():

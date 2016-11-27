@@ -40,6 +40,8 @@ public class LatencySpout extends BaseRichSpout {
   private long lastSend = System.nanoTime();
   // send interval in nano seconds
   private long sendInterval;
+  // last wait for ack
+  private long lastWaitForAck = -1;
 
   private enum SendingType {
     DATA,
@@ -74,9 +76,13 @@ public class LatencySpout extends BaseRichSpout {
     }
     // wait until time passed
     if (sendInterval > 0 && (System.nanoTime() - lastSend) < sendInterval) {
+      if (lastWaitForAck > 0 && System.nanoTime() - lastWaitForAck > 10000000000L) {
+        LOG.warn("Too much waiting for acks to finish");
+      }
+      lastWaitForAck = System.nanoTime();
       return;
     }
-
+    lastWaitForAck = -1;
     int size = 1;
     if (currentCount == 0) {
       if (sendState == LatencySpout.SendingType.EMPTY) {
@@ -103,7 +109,7 @@ public class LatencySpout extends BaseRichSpout {
     if (sendState == SendingType.DATA) {
       sendTimes.put(id, new Send(id, size, currentCount, System.nanoTime()));
     }
-    System.out.println("Sending...");
+//    System.out.println("Sending...");
     collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
     // update the last send time
     lastSend = System.nanoTime();
