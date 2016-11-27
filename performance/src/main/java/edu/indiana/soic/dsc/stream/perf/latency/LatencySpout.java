@@ -76,10 +76,11 @@ public class LatencySpout extends BaseRichSpout {
     }
     // wait until time passed
     if (sendInterval > 0 && (System.nanoTime() - lastSend) < sendInterval) {
-      if (lastWaitForAck > 0 && System.nanoTime() - lastWaitForAck > 10000000000L) {
-        LOG.warn("Too much waiting for acks to finish");
-      }
-      lastWaitForAck = System.nanoTime();
+      //if (lastWaitForAck > 0 && System.nanoTime() - lastWaitForAck > 10000000000L) {
+      //  LOG.warn("Too much waiting for acks to finish");
+//        System.out.println("Too much waiting for acks to finish");
+//      }
+//      lastWaitForAck = System.nanoTime();
       return;
     }
     lastWaitForAck = -1;
@@ -147,7 +148,20 @@ public class LatencySpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
-    super.fail(o);
+    if (sendTimes.containsKey(o.toString())) {
+      Send send = sendTimes.remove(o.toString());
+      LOG.info("Failed tuple....: " + send.id + ", " + send.size + ", " + send.index);
+      // long receiveTime = System.nanoTime();
+      int currentSize = send.size;
+      // latencies.add((receiveTime - send.time));
+      // we have received all the times
+      if (latencies.size() == noOfMessages) {
+        writeLatencies(currentSize + "", latencies);
+        latencies.clear();
+        currentAckCount = 0;
+      }
+      currentAckCount++;
+    }
   }
 
   @Override

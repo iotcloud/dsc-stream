@@ -34,7 +34,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     List<Tuple> anchors = new ArrayList<>();
     anchors.add(tuple);
     collector.emit(Constants.Fields.CHAIN_STREAM, anchors, list);
-    collector.ack(tuple);
+     collector.ack(tuple);
   }
 
   @Override
