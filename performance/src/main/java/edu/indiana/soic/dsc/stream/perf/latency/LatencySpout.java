@@ -9,6 +9,7 @@ import edu.indiana.soic.dsc.stream.perf.Constants;
 import edu.indiana.soic.dsc.stream.perf.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Int;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -21,8 +22,6 @@ public class LatencySpout extends BaseRichSpout {
 
   // keep track of the send times with id
   private Map<String, Send> sendTimes = new HashMap<String, Send>();
-  // average latency for a message size
-  private Map<Integer, Long> averageTimes = new HashMap<>();
   // latencies for the current message size
   private List<Long> latencies = new ArrayList<>();
 
@@ -42,6 +41,7 @@ public class LatencySpout extends BaseRichSpout {
   private long sendInterval;
   // last wait for ack
   private long lastWaitForAck = -1;
+  private Map<Integer, Integer> failedCounts = new HashMap<>();
 
   private enum SendingType {
     DATA,
@@ -57,6 +57,9 @@ public class LatencySpout extends BaseRichSpout {
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
     sendInterval = (Long) stormConf.get(Constants.ARGS_SEND_INTERVAL);
+    for (Integer m : messageSizes) {
+      failedCounts.put(m, 0);
+    }
 
     this.collector = outputCollector;
   }
@@ -136,8 +139,11 @@ public class LatencySpout extends BaseRichSpout {
       long receiveTime = System.nanoTime();
       int currentSize = send.size;
       latencies.add((receiveTime - send.time));
+      int currentFailCount = failedCounts.get(currentSize);
+      currentFailCount++;
+      failedCounts.put(currentSize, currentFailCount);
       // we have received all the times
-      if (latencies.size() == noOfMessages) {
+      if (latencies.size() == noOfMessages + currentFailCount) {
         writeLatencies(currentSize + "", latencies);
         latencies.clear();
         currentAckCount = 0;
