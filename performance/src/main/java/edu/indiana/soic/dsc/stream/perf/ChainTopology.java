@@ -94,6 +94,7 @@ public class ChainTopology {
 
       buildLatencyTopology(builder, streamTopologyBuilder, p);
     } else if (throughput.equals("lf")) {
+      conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
       buildLatencyFixedRateTopology(builder, streamTopologyBuilder, p);
     }
 
