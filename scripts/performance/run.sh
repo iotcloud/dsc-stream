@@ -6,7 +6,7 @@ sizes=( 32000 32000 32000 64000 128000 256000 512000)
 no_msgs=2000
 amqp_url="amqp://d001:5672"
 delay=50
-results=tcp6
+results=results/tcp7
 
 for size in "${sizes[@]}"
 do
