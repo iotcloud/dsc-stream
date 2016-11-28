@@ -9,7 +9,6 @@ import edu.indiana.soic.dsc.stream.perf.Constants;
 import edu.indiana.soic.dsc.stream.perf.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Int;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -32,16 +31,14 @@ public class LatencySpout extends BaseRichSpout {
   private int currentSendIndex = 0;
   private SpoutOutputCollector collector;
   private int currentCount = 0;
-  private byte []data = null;
   private String fileName;
   // we count the acks
   private int currentAckCount = 0;
   private long lastSend = System.nanoTime();
   // send interval in nano seconds
   private long sendInterval;
-  // last wait for ack
-  private long lastWaitForAck = -1;
   private Map<Integer, Integer> failedCounts = new HashMap<>();
+  private Map<Integer, Integer> ackCount = new HashMap<>();
 
   private enum SendingType {
     DATA,
@@ -66,6 +63,8 @@ public class LatencySpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
+    byte []data = null;
+
     if (currentSendIndex >= messageSizes.size()) {
       return;
     }
@@ -86,24 +85,22 @@ public class LatencySpout extends BaseRichSpout {
 //      lastWaitForAck = System.nanoTime();
       return;
     }
-    lastWaitForAck = -1;
     int size = 1;
     if (currentCount == 0) {
-      if (sendState == LatencySpout.SendingType.EMPTY) {
-        // LOG.info("Empty message generate");
-        data = Utils.generateData(1);
-      } else {
+      if (sendState != LatencySpout.SendingType.EMPTY) {
         // LOG.info("Data message generate");
         size = messageSizes.get(currentSendIndex);
-        data = Utils.generateData(size);
       }
     } else {
       if (sendState == LatencySpout.SendingType.DATA) {
         size = messageSizes.get(currentSendIndex);
       }
     }
+    data = Utils.generateData(size);
     currentCount++;
-
+    if (data.length != size) {
+      throw new RuntimeException("data length and size not equal: " + data.length + "!=" + size);
+    }
     List<Object> list = new ArrayList<Object>();
     list.add(data);
     list.add(currentCount);
@@ -113,7 +110,6 @@ public class LatencySpout extends BaseRichSpout {
     if (sendState == SendingType.DATA) {
       sendTimes.put(id, new Send(id, size, currentCount, System.nanoTime()));
     }
-//    System.out.println("Sending...");
     collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
     // update the last send time
     lastSend = System.nanoTime();
