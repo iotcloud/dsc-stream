@@ -42,6 +42,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     list.add(index);
     list.add(size);
     list.add(System.nanoTime());
+    list.add(time);
 
     long now = System.nanoTime();
     long expired = (now - time);
@@ -61,7 +62,8 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
         Constants.Fields.BODY,
         Constants.Fields.MESSAGE_INDEX_FIELD,
         Constants.Fields.MESSAGE_SIZE_FIELD,
-        Constants.Fields.TIME_FIELD));
+        Constants.Fields.TIME_FIELD,
+        Constants.Fields.TIME_FIELD2));
   }
 
 

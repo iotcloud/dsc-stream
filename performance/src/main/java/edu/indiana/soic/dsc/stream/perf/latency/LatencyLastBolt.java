@@ -26,10 +26,11 @@ public class LatencyLastBolt extends BaseRichBolt {
   @Override
   public void execute(Tuple tuple) {
     Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
+    Long totalTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
     long now = System.nanoTime();
     long expired = (now - time);
-    LOG.info("Time: " + (expired));
-    System.out.println("ID: " + id + "Time: " + expired);
+    LOG.info("Time: " + (expired) + " Total: " + (now - totalTime));
+    System.out.println("ID: " + id + "Time: " + expired  + " Total: " + (now - totalTime));
     collector.ack(tuple);
   }
 
@@ -38,6 +39,7 @@ public class LatencyLastBolt extends BaseRichBolt {
     outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
         Constants.Fields.BODY,
         Constants.Fields.SENSOR_ID_FIELD,
-        Constants.Fields.TIME_FIELD));
+        Constants.Fields.TIME_FIELD,
+        Constants.Fields.TIME_FIELD2));
   }
 }

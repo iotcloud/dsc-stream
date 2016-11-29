@@ -100,6 +100,7 @@ public class LatencySpout extends BaseRichSpout {
     list.add(currentCount);
     list.add(size);
     list.add(System.nanoTime());
+    list.add(System.nanoTime());
     String id = UUID.randomUUID().toString();
     // we only keep track of the data items
     if (sendState == SendingType.DATA) {
@@ -169,7 +170,8 @@ public class LatencySpout extends BaseRichSpout {
         Constants.Fields.BODY,
         Constants.Fields.MESSAGE_INDEX_FIELD,
         Constants.Fields.MESSAGE_SIZE_FIELD,
-        Constants.Fields.TIME_FIELD));
+        Constants.Fields.TIME_FIELD,
+        Constants.Fields.TIME_FIELD2));
   }
 
   private void writeLatencies(String name, List<Long> latencies) {

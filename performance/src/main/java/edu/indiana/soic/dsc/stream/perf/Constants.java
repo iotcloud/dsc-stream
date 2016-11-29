@@ -37,6 +37,7 @@ public class Constants {
     public static final String READY_STREAM = "ready";
     public static final String CONTROL_STREAM = "control";
     public static final String TIME_FIELD = "time";
+    public static final String TIME_FIELD2 = "time2";
     public static final String DATA_FIELD = "data";
     public static final String SENSOR_ID_FIELD = "sensorID";
     public static final String TRACE_FIELD = "trace";
