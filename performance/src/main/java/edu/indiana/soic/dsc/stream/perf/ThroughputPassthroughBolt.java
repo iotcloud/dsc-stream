@@ -17,10 +17,13 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
   private static Logger LOG = LoggerFactory.getLogger(ThroughputPassthroughBolt.class);
   private OutputCollector collector;
   private List<Integer> messageSizes = new ArrayList<Integer>();
+  private String id;
+
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
     this.collector = outputCollector;
     messageSizes = (List<Integer>) map.get(Constants.ARGS_THRPUT_SIZES);
+    this.id = topologyContext.getThisComponentId();
   }
 
   @Override
@@ -28,6 +31,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     Object body = tuple.getValueByField(Constants.Fields.BODY);
     Object size = tuple.getValueByField(Constants.Fields.MESSAGE_SIZE_FIELD);
     Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+    Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
 
     List<Object> list = new ArrayList<Object>();
     byte []b = (byte[]) body;
@@ -37,6 +41,14 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     list.add(body);
     list.add(index);
     list.add(size);
+    list.add(System.nanoTime());
+
+    long now = System.nanoTime();
+    long expired = (now - time);
+    LOG.info("Time: " + (expired));
+    System.out.println("ID: " + id + " Time: " + expired);
+    System.out.println("ID: " + id + " Time: " + expired);
+
     List<Tuple> anchors = new ArrayList<>();
     anchors.add(tuple);
     collector.emit(Constants.Fields.CHAIN_STREAM, anchors, list);
@@ -48,7 +60,8 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
         Constants.Fields.BODY,
         Constants.Fields.MESSAGE_INDEX_FIELD,
-        Constants.Fields.MESSAGE_SIZE_FIELD));
+        Constants.Fields.MESSAGE_SIZE_FIELD,
+        Constants.Fields.TIME_FIELD));
   }
 
 

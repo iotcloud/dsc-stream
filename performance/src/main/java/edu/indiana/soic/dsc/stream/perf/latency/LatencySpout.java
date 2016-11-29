@@ -78,17 +78,11 @@ public class LatencySpout extends BaseRichSpout {
     }
     // wait until time passed
     if (sendInterval > 0 && (System.nanoTime() - lastSend) < sendInterval) {
-      //if (lastWaitForAck > 0 && System.nanoTime() - lastWaitForAck > 10000000000L) {
-      //  LOG.warn("Too much waiting for acks to finish");
-//        System.out.println("Too much waiting for acks to finish");
-//      }
-//      lastWaitForAck = System.nanoTime();
       return;
     }
     int size = 1;
     if (currentCount == 0) {
       if (sendState != LatencySpout.SendingType.EMPTY) {
-        // LOG.info("Data message generate");
         size = messageSizes.get(currentSendIndex);
       }
     } else {
@@ -105,6 +99,7 @@ public class LatencySpout extends BaseRichSpout {
     list.add(data);
     list.add(currentCount);
     list.add(size);
+    list.add(System.nanoTime());
     String id = UUID.randomUUID().toString();
     // we only keep track of the data items
     if (sendState == SendingType.DATA) {
@@ -130,6 +125,7 @@ public class LatencySpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
+    // we only keep track of the data messages
     if (sendTimes.containsKey(o.toString())) {
       Send send = sendTimes.remove(o.toString());
       long receiveTime = System.nanoTime();
@@ -172,7 +168,8 @@ public class LatencySpout extends BaseRichSpout {
     outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
         Constants.Fields.BODY,
         Constants.Fields.MESSAGE_INDEX_FIELD,
-        Constants.Fields.MESSAGE_SIZE_FIELD));
+        Constants.Fields.MESSAGE_SIZE_FIELD,
+        Constants.Fields.TIME_FIELD));
   }
 
   private void writeLatencies(String name, List<Long> latencies) {

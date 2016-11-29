@@ -15,14 +15,21 @@ import java.util.Map;
 public class LatencyLastBolt extends BaseRichBolt {
   private static Logger LOG = LoggerFactory.getLogger(LatencyLastBolt.class);
   private OutputCollector collector;
+  private String id;
 
   @Override
   public void prepare(Map stormConf, TopologyContext topologyContext, OutputCollector outputCollector) {
     this.collector = outputCollector;
+    this.id = topologyContext.getThisComponentId();
   }
 
   @Override
   public void execute(Tuple tuple) {
+    Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
+    long now = System.nanoTime();
+    long expired = (now - time);
+    LOG.info("Time: " + (expired));
+    System.out.println("ID: " + id + "Time: " + expired);
     collector.ack(tuple);
   }
 

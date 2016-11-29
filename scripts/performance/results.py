@@ -26,8 +26,8 @@ def main():
     data = [32000, 64000, 128000, 256000, 512000]
     data = [1000,2000,4000,8000,16000,32000,64000,128000, 256000, 512000]
     #data = [128000, 256000]
-    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/tcp10/", data, tasks)
-    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/rdma10/", data, tasks)
+    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/tcp14/", data, tasks)
+    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/rdma14/", data, tasks)
 
 
 def calc(folder, data, tasks):
