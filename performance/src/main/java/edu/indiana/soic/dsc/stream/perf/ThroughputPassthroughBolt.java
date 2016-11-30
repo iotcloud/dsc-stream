@@ -46,8 +46,8 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
 
     long now = System.nanoTime();
     long expired = (now - time);
-    LOG.info("Time: " + (expired));
-    System.out.println("ID: " + id + " Time: " + expired);
+    //LOG.info("Time: " + (expired));
+    //System.out.println("ID: " + id + " Time: " + expired);
     System.out.println("ID: " + id + " Time: " + expired);
 
     List<Tuple> anchors = new ArrayList<>();
