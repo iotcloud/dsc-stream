@@ -54,4 +54,17 @@ public class Utils {
     symbolListOption.setRequired(required);
     return symbolListOption;
   }
+
+  public static void printTime(String id, Long time, Long previousTime) {
+    long now = System.nanoTime();
+    long expired;
+    if (previousTime == null) {
+      expired = (now - time);
+    } else {
+      expired = (now - previousTime);
+    }
+
+    LOG.info("ID: " + id + "Total: " + (now - time) + " Time: " + expired);
+    System.out.println("ID: " + id + " Total: " + (now - time) + " Time: " + expired);
+  }
 }

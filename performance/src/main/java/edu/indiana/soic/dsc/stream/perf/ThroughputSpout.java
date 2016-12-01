@@ -65,6 +65,8 @@ public class ThroughputSpout extends BaseRichSpout {
     list.add(data);
     list.add(currentCount);
     list.add(size);
+    list.add(System.nanoTime());
+    list.add(System.nanoTime());
     collector.emit(Constants.Fields.CHAIN_STREAM, list);
 
     if (sendState == SendingType.EMPTY) {
@@ -86,6 +88,8 @@ public class ThroughputSpout extends BaseRichSpout {
     outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
         Constants.Fields.BODY,
         Constants.Fields.MESSAGE_INDEX_FIELD,
-        Constants.Fields.MESSAGE_SIZE_FIELD));
+        Constants.Fields.MESSAGE_SIZE_FIELD,
+        Constants.Fields.TIME_FIELD,
+        Constants.Fields.TIME_FIELD2));
   }
 }

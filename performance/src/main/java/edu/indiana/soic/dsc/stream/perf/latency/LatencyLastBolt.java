@@ -7,6 +7,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import edu.indiana.soic.dsc.stream.perf.Constants;
+import edu.indiana.soic.dsc.stream.perf.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,13 +29,15 @@ public class LatencyLastBolt extends BaseRichBolt {
   @Override
   public void execute(Tuple tuple) {
     Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
-    Long totalTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
-    long now = System.nanoTime();
-    long expired = (now - time);
-    if (debug) {
-      LOG.info("Time: " + (expired) + " Total: " + (now - totalTime));
-      System.out.println("ID: " + id + "Time: " + expired + " Total: " + (now - totalTime));
+    Long previousTime = null;
+    if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
+      previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
     }
+
+    if (debug) {
+      Utils.printTime(id, time, previousTime);
+    }
+
     collector.ack(tuple);
   }
 

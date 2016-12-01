@@ -67,7 +67,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
         receiveState = ReceiveType.EMPTY;
         long time = System.nanoTime() - firstThroughputRecvTime;
         firstThroughputRecvTime = 0;
-        currentOutPut = size + " " + time + " " + (messageCount + 0.0)/ (time / 1000000000.0);
+        currentOutPut = size + " " + noOfMessages + " " + time + " " + (messageCount + 0.0)/ (time / 1000000000.0);
         writeFile(currentOutPut);
       }
     }

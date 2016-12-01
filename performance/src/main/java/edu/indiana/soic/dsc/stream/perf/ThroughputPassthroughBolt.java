@@ -34,7 +34,10 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     Object size = tuple.getValueByField(Constants.Fields.MESSAGE_SIZE_FIELD);
     Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
     Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
-
+    Long previousTime = null;
+    if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
+      previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
+    }
     List<Object> list = new ArrayList<Object>();
     byte []b = (byte[]) body;
     if (!messageSizes.contains(b.length) && b.length != 1) {
@@ -43,16 +46,11 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     list.add(body);
     list.add(index);
     list.add(size);
-    list.add(System.nanoTime());
     list.add(time);
+    list.add(System.nanoTime());
 
-    long now = System.nanoTime();
-    long expired = (now - time);
-    //LOG.info("Time: " + (expired));
-    //System.out.println("ID: " + id + " Time: " + expired);
     if (debug) {
-      LOG.info("ID: " + id + " Time: " + expired);
-      System.out.println("ID: " + id + " Time: " + expired);
+      Utils.printTime(id, time, previousTime);
     }
 
     List<Tuple> anchors = new ArrayList<>();
