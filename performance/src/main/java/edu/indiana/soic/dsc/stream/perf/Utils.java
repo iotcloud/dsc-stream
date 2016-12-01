@@ -55,7 +55,7 @@ public class Utils {
     return symbolListOption;
   }
 
-  public static void printTime(String id, Long time, Long previousTime) {
+  public static void printTime(String id, int size, Long time, Long previousTime) {
     long now = System.nanoTime();
     long expired;
     if (previousTime == null) {
@@ -65,6 +65,6 @@ public class Utils {
     }
 
     LOG.info("ID: " + id + "Total: " + (now - time) + " Time: " + expired);
-    System.out.println("ID: " + id + " Total: " + (now - time) + " Time: " + expired);
+    System.out.println("ID: " + id + " Size:" + size + " Total: " + (now - time) + " Time: " + expired);
   }
 }

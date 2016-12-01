@@ -29,13 +29,14 @@ public class LatencyLastBolt extends BaseRichBolt {
   @Override
   public void execute(Tuple tuple) {
     Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
+    Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
     Long previousTime = null;
     if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
       previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
     }
 
     if (debug) {
-      Utils.printTime(id, time, previousTime);
+      Utils.printTime(id, size, time, previousTime);
     }
 
     collector.ack(tuple);

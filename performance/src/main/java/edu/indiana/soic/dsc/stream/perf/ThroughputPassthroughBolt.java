@@ -31,7 +31,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
   @Override
   public void execute(Tuple tuple) {
     Object body = tuple.getValueByField(Constants.Fields.BODY);
-    Object size = tuple.getValueByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+    Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
     Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
     Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
     Long previousTime = null;
@@ -42,6 +42,11 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     byte []b = (byte[]) body;
     if (!messageSizes.contains(b.length) && b.length != 1) {
       LOG.error("The message size is in-correct");
+      System.out.println("The message size is in-correct");
+    }
+    if (size != b.length) {
+      LOG.error("The message size is in-correct");
+      System.out.println("The message size is in-correct");
     }
     list.add(body);
     list.add(index);
@@ -50,7 +55,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     list.add(System.nanoTime());
 
     if (debug) {
-      Utils.printTime(id, time, previousTime);
+      Utils.printTime(id, size, time, previousTime);
     }
 
     List<Tuple> anchors = new ArrayList<>();

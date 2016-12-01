@@ -63,7 +63,7 @@ public class LatencySpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-    byte []data = null;
+    byte []data;
 
     if (currentSendIndex >= messageSizes.size()) {
       return;
@@ -115,6 +115,7 @@ public class LatencySpout extends BaseRichSpout {
         currentCount = 0;
         if (currentSendIndex < messageSizes.size()) {
           LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
+          System.out.println("Started processing size: " + messageSizes.get(currentSendIndex));
         }
         sendState = LatencySpout.SendingType.DATA;
       }
