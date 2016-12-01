@@ -113,6 +113,9 @@ public class LatencySpout extends BaseRichSpout {
     if (sendState == LatencySpout.SendingType.EMPTY) {
       if (currentCount >= noOfEmptyMessages) {
         currentCount = 0;
+        if (currentSendIndex < messageSizes.size()) {
+          LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
+        }
         sendState = LatencySpout.SendingType.DATA;
       }
     } else if (sendState == LatencySpout.SendingType.DATA) {

@@ -72,6 +72,9 @@ public class ThroughputSpout extends BaseRichSpout {
     if (sendState == SendingType.EMPTY) {
       if (currentCount >= noOfEmptyMessages) {
         currentCount = 0;
+        if (currentSendIndex < messageSizes.size()) {
+          LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
+        }
         sendState = SendingType.DATA;
       }
     } else if (sendState == SendingType.DATA) {
