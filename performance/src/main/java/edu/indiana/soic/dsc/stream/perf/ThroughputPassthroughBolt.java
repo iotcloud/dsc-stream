@@ -18,12 +18,14 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
   private OutputCollector collector;
   private List<Integer> messageSizes = new ArrayList<Integer>();
   private String id;
+  private boolean debug;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
     this.collector = outputCollector;
     messageSizes = (List<Integer>) map.get(Constants.ARGS_THRPUT_SIZES);
     this.id = topologyContext.getThisComponentId();
+    this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
   }
 
   @Override
@@ -48,7 +50,10 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     long expired = (now - time);
     //LOG.info("Time: " + (expired));
     //System.out.println("ID: " + id + " Time: " + expired);
-    System.out.println("ID: " + id + " Time: " + expired);
+    if (debug) {
+      LOG.info("ID: " + id + " Time: " + expired);
+      System.out.println("ID: " + id + " Time: " + expired);
+    }
 
     List<Tuple> anchors = new ArrayList<>();
     anchors.add(tuple);

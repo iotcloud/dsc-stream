@@ -7,15 +7,13 @@ public class Constants {
   public static final String ARGS_PARALLEL = "p";
   public static final String ARGS_SREAM_MGRS = "stmgr";
   public static final String ARGS_IOT_CLOUD = "i";
-  public static final String ARGS_PARTICLES = "pt";
-  public static final String ARGS_NODE_BRANCH = "nb";
-  public static final String ARGS_WORKER_BRANCH= "wb";
   public static final String ARGS_BINARY_TREE= "bt";
   public static final String ARGS_PIPE_LINE = "pl";
   public static final String ARGS_FLAT_TREE = "ft";
   public static final String ARGS_FLAT_TREE_BRANCH = "fb";
   public static final String ARGS_ASYNCHRONOUS = "as";
   public static final String ARGS_PIPE_SPLIT = "pls";
+  public static final String ARGS_DEBUG = "g";
 
   public static final String ARGS_THRPUT_SIZES = "thrSizes";
   public static final String ARGS_THRPUT_NO_MSGS = "thrN";
