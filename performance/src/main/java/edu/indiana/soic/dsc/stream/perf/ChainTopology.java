@@ -66,6 +66,7 @@ public class ChainTopology {
       // we are not going to track individual messages, message loss is inherent in the decoder
       // also we cannot replay message because of the decoder
       conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
+      conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, false);
 
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
@@ -107,6 +108,7 @@ public class ChainTopology {
       buildLatencyTopology(builder, streamTopologyBuilder, p);
     } else if (throughput.equals("lf")) {
       conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
+      conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, false);
       buildLatencyFixedRateTopology(builder, streamTopologyBuilder, p);
     }
 
