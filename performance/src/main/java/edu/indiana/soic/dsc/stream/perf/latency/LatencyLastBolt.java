@@ -34,8 +34,8 @@ public class LatencyLastBolt extends BaseRichBolt {
     if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
       previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
     }
-
     if (debug) {
+      LOG.info("Messagre received");
       Utils.printTime(id, size, time, previousTime);
     }
 

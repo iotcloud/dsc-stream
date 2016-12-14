@@ -55,6 +55,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     list.add(System.nanoTime());
 
     if (debug) {
+      LOG.info("Messagre received");
       Utils.printTime(id, size, time, previousTime);
     }
 

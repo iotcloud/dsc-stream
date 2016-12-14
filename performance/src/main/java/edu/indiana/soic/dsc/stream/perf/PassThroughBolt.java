@@ -7,16 +7,20 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import com.esotericsoftware.kryo.Kryo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class PassThroughBolt extends BaseRichBolt {
+  private static Logger LOG = LoggerFactory.getLogger(PassThroughBolt.class);
   private TopologyContext context;
   private OutputCollector collector;
   private Kryo kryo;
   private boolean last;
+  private boolean debug;
 
   public boolean isLast() {
     return last;
@@ -32,6 +36,7 @@ public class PassThroughBolt extends BaseRichBolt {
     this.collector = outputCollector;
     this.kryo = new Kryo();
     Utils.registerClasses(kryo);
+    this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
   }
 
   @Override
@@ -47,6 +52,9 @@ public class PassThroughBolt extends BaseRichBolt {
       list.add(b);
     } else {
       list.add(body);
+    }
+    if (debug) {
+      LOG.info("Messagre received");
     }
     list.add(sensorId);
     list.add(time);
