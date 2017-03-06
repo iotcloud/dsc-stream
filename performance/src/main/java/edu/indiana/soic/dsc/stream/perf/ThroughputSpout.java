@@ -53,9 +53,9 @@ public class ThroughputSpout extends BaseRichSpout {
 
       // we cannot send anything until we get enough acks
       if (outstandingTuples >= maxOutstandingTuples) {
-        if (debug && waitCount % 100 == 0) {
-          LOG.info(String.format("Waiting for acks %d: ", outstandingTuples));
-        }
+//        if (debug) {
+//          LOG.info(String.format("Waiting for acks %d: ", outstandingTuples));
+//        }
         return;
       }
 

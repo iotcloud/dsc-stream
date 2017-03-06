@@ -22,6 +22,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
   private String currentOutPut;
   private ReceiveType receiveState = ReceiveType.EMPTY;
   private OutputCollector outputCollector;
+  private int count = 0;
 
   private enum ReceiveType {
     DATA,
@@ -78,6 +79,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
           writeFile(currentOutPut);
         }
       }
+      LOG.info("Count: " + count++);
     } catch (Throwable t) {
       t.printStackTrace();
     }
