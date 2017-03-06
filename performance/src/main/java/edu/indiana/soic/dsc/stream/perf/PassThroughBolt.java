@@ -10,7 +10,9 @@ import com.esotericsoftware.kryo.Kryo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +22,17 @@ public class PassThroughBolt extends BaseRichBolt {
   private OutputCollector collector;
   private Kryo kryo;
   private boolean last;
+  private boolean first;
   private boolean debug;
+  private Map<Integer, byte[]> dataCache = new HashMap<>();
+
+  public boolean isFirst() {
+    return first;
+  }
+
+  public void setFirst(boolean first) {
+    this.first = first;
+  }
 
   public boolean isLast() {
     return last;
@@ -44,15 +56,34 @@ public class PassThroughBolt extends BaseRichBolt {
     Object body = tuple.getValueByField(Constants.Fields.BODY);
     Object time = tuple.getValueByField(Constants.Fields.TIME_FIELD);
     Object sensorId = tuple.getValueByField(Constants.Fields.SENSOR_ID_FIELD);
+    byte []b = null;
 
     List<Object> list = new ArrayList<Object>();
+    // first bolt but not last
+    if (first && !last) {
+      ByteBuffer wrapped = ByteBuffer.wrap((byte[]) body); // big-endian by default
+      int dataSize = wrapped.getInt(); // 1
+      if (dataCache.containsKey(dataSize)) {
+        b = dataCache.get(dataSize);
+      } else {
+        b = Utils.generateData(dataSize);
+        dataCache.put(dataSize, b);
+      }
+      list.add(b);
+    }
+
+    // last bolt
     if (last) {
       SingleTrace singleTrace = new SingleTrace();
-      byte []b = Utils.serialize(kryo, singleTrace);
+      b = Utils.serialize(kryo, singleTrace);
       list.add(b);
-    } else {
+    }
+
+    // middle bolt
+    if (!last && !first) {
       list.add(body);
     }
+
     if (debug) {
       LOG.info("Messagre received");
     }

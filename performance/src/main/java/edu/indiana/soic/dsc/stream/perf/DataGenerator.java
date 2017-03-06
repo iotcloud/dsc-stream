@@ -4,6 +4,7 @@ import cgl.iotcloud.core.transport.TransportConstants;
 import cgl.iotrobots.utils.rabbitmq.*;
 import com.esotericsoftware.kryo.Kryo;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -77,13 +78,15 @@ public class DataGenerator {
     @Override
     public void run() {
       int count = 0;
+      ByteBuffer b = ByteBuffer.allocate(4);
+      b.putInt(dataSize);
+      byte[] sizeBytes = b.array();
       while (count < messages) {
-        byte []body = Utils.generateData(dataSize);
         Map<String, Object> props = new HashMap<String, Object>();
         props.put("time", System.nanoTime());
         String id = UUID.randomUUID().toString();
         props.put(TransportConstants.SENSOR_ID, id);
-        Message message = new Message(body, props);
+        Message message = new Message(sizeBytes, props);
         try {
           dataSender.send(message, "test.test.laser_scan");
         } catch (Exception e) {

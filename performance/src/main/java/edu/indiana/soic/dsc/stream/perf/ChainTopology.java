@@ -154,6 +154,7 @@ public class ChainTopology {
     builder.setSpout(Constants.Topology.RECEIVE_SPOUT, dataSpout, 1);
 
     PassThroughBolt previousChainBolt = new PassThroughBolt();
+    previousChainBolt.setFirst(true);
     builder.setBolt(Constants.Topology.CHAIN_BOLT + "_0", previousChainBolt, 1).
         shuffleGrouping(Constants.Topology.RECEIVE_SPOUT);
     for (int i = 1; i < parallel; i++) {
