@@ -22,6 +22,8 @@ public class ThroughputSpout extends BaseRichSpout {
   private SpoutOutputCollector collector;
   private int currentCount = 0;
   private byte []data = null;
+  private int outstandingTuples = 0;
+  private int maxOutstandingTuples = 100;
 
   private enum SendingType {
     DATA,
@@ -40,51 +42,71 @@ public class ThroughputSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-    if (currentSendIndex >= messageSizes.size()) {
-      return;
-    }
-
-    int size = 1;
-    if (currentCount == 0) {
-      if (sendState == SendingType.EMPTY) {
-        // LOG.info("Empty message generate");
-        data = Utils.generateData(1);
-      } else {
-        // LOG.info("Data message generate");
-        size = messageSizes.get(currentSendIndex);
-        data = Utils.generateData(size);
+    try {
+      if (currentSendIndex >= messageSizes.size()) {
+        return;
       }
-    } else {
-      if (sendState == SendingType.DATA) {
-        size = messageSizes.get(currentSendIndex);
+
+      // we cannot send anything until we get enough acks
+      if (outstandingTuples >= maxOutstandingTuples) {
+        return;
       }
-    }
-    currentCount++;
 
-    List<Object> list = new ArrayList<Object>();
-    list.add(data);
-    list.add(currentCount);
-    list.add(size);
-    list.add(System.nanoTime());
-    list.add(System.nanoTime());
-    collector.emit(Constants.Fields.CHAIN_STREAM, list);
-
-    if (sendState == SendingType.EMPTY) {
-      if (currentCount >= noOfEmptyMessages) {
-        currentCount = 0;
-        if (currentSendIndex < messageSizes.size()) {
-          LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
-          System.out.println("Started processing size: " + messageSizes.get(currentSendIndex));
+      int size = 1;
+      if (currentCount == 0) {
+        if (sendState == SendingType.EMPTY) {
+          // LOG.info("Empty message generate");
+          data = Utils.generateData(1);
+        } else {
+          // LOG.info("Data message generate");
+          size = messageSizes.get(currentSendIndex);
+          data = Utils.generateData(size);
         }
-        sendState = SendingType.DATA;
+      } else {
+        if (sendState == SendingType.DATA) {
+          size = messageSizes.get(currentSendIndex);
+        }
       }
-    } else if (sendState == SendingType.DATA) {
-      if (currentCount >= noOfMessages) {
-        currentCount = 0;
-        currentSendIndex++;
-        sendState = SendingType.EMPTY;
+      currentCount++;
+
+      List<Object> list = new ArrayList<Object>();
+      list.add(data);
+      list.add(currentCount);
+      list.add(size);
+      list.add(System.nanoTime());
+      list.add(System.nanoTime());
+      collector.emit(Constants.Fields.CHAIN_STREAM, list);
+      outstandingTuples++;
+
+      if (sendState == SendingType.EMPTY) {
+        if (currentCount >= noOfEmptyMessages) {
+          currentCount = 0;
+          if (currentSendIndex < messageSizes.size()) {
+            LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
+            System.out.println("Started processing size: " + messageSizes.get(currentSendIndex));
+          }
+          sendState = SendingType.DATA;
+        }
+      } else if (sendState == SendingType.DATA) {
+        if (currentCount >= noOfMessages) {
+          currentCount = 0;
+          currentSendIndex++;
+          sendState = SendingType.EMPTY;
+        }
       }
+    } catch (Throwable t) {
+      t.printStackTrace();
     }
+  }
+
+  @Override
+  public void ack(Object o) {
+    outstandingTuples--;
+  }
+
+  @Override
+  public void fail(Object o) {
+    super.fail(o);
   }
 
   @Override

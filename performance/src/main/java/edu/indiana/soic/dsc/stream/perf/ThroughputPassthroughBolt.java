@@ -30,39 +30,43 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
 
   @Override
   public void execute(Tuple tuple) {
-    Object body = tuple.getValueByField(Constants.Fields.BODY);
-    Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
-    Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
-    Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
-    Long previousTime = null;
-    if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
-      previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
-    }
-    List<Object> list = new ArrayList<Object>();
-    byte []b = (byte[]) body;
-    if (!messageSizes.contains(b.length) && b.length != 1) {
-      LOG.error("The message size is in-correct");
-      System.out.println("The message size is in-correct");
-    }
-    if (size != b.length) {
-      LOG.error("The message size is in-correct");
-      System.out.println("The message size is in-correct");
-    }
-    list.add(body);
-    list.add(index);
-    list.add(size);
-    list.add(time);
-    list.add(System.nanoTime());
+    try {
+      Object body = tuple.getValueByField(Constants.Fields.BODY);
+      Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+      Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+      Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
+      Long previousTime = null;
+      if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
+        previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
+      }
+      List<Object> list = new ArrayList<Object>();
+      byte[] b = (byte[]) body;
+      if (!messageSizes.contains(b.length) && b.length != 1) {
+        LOG.error("The message size is in-correct");
+        System.out.println("The message size is in-correct");
+      }
+      if (size != b.length) {
+        LOG.error("The message size is in-correct");
+        System.out.println("The message size is in-correct");
+      }
+      list.add(body);
+      list.add(index);
+      list.add(size);
+      list.add(time);
+      list.add(System.nanoTime());
 
-    if (debug) {
-      LOG.info("Messagre received");
-      Utils.printTime(id, size, time, previousTime);
-    }
+      if (debug) {
+        LOG.info("Messagre received");
+        Utils.printTime(id, size, time, previousTime);
+      }
 
-    List<Tuple> anchors = new ArrayList<>();
-    anchors.add(tuple);
-    collector.emit(Constants.Fields.CHAIN_STREAM, anchors, list);
-    collector.ack(tuple);
+      List<Tuple> anchors = new ArrayList<>();
+      anchors.add(tuple);
+      collector.emit(Constants.Fields.CHAIN_STREAM, anchors, list);
+      collector.ack(tuple);
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
   }
 
   @Override

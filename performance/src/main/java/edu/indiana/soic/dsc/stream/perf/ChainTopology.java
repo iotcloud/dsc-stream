@@ -65,8 +65,8 @@ public class ChainTopology {
     if (throughput.equals("t")) {
       // we are not going to track individual messages, message loss is inherent in the decoder
       // also we cannot replay message because of the decoder
-      conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
-      conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, false);
+      // conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
+      // conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, false);
 
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
@@ -130,8 +130,8 @@ public class ChainTopology {
       // deploy on a local cluster
       conf.setMaxTaskParallelism(120);
       LocalCluster cluster = new LocalCluster();
-      cluster.submitTopology("drone", conf, builder.createTopology());
-      Thread.sleep(1000000);
+      cluster.submitTopology("test", conf, builder.createTopology());
+      Thread.sleep(10000);
       cluster.shutdown();
     }
   }

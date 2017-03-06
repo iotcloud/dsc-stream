@@ -8,6 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.reflect.generic.Trees;
 
 import java.io.*;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
   private long firstThroughputRecvTime = 0;
   private String currentOutPut;
   private ReceiveType receiveState = ReceiveType.EMPTY;
+  private OutputCollector outputCollector;
 
   private enum ReceiveType {
     DATA,
@@ -31,6 +33,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
     noOfMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
+    this.outputCollector = outputCollector;
   }
 
   @Override
@@ -47,29 +50,36 @@ public class ThroughputLastBolt extends BaseRichBolt {
   }
 
   private void throughputProcess(Tuple tuple) {
-    String stream = tuple.getSourceStreamId();
-    if (stream.equals(Constants.Fields.CONTROL_STREAM)) {
-      return;
-    }
+    try {
+      String stream = tuple.getSourceStreamId();
+      outputCollector.ack(tuple);
 
-    Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
-    Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+      if (stream.equals(Constants.Fields.CONTROL_STREAM)) {
+        return;
+      }
 
-    if (receiveState == ReceiveType.EMPTY) {
-      // LOG.info("Empty receive: " + messageCount);
-      if (messageCount == noOfEmptyMessages) {
-        receiveState = ReceiveType.DATA;
-        firstThroughputRecvTime = System.nanoTime();
+      Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+      Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+
+      if (receiveState == ReceiveType.EMPTY) {
+        // LOG.info("Empty receive: " + messageCount);
+        if (messageCount == noOfEmptyMessages) {
+          receiveState = ReceiveType.DATA;
+          firstThroughputRecvTime = System.nanoTime();
+        }
+      } else if (receiveState == ReceiveType.DATA) {
+        // LOG.info("Data receive: " + messageCount);
+        if (messageCount == noOfMessages) {
+          receiveState = ReceiveType.EMPTY;
+          long time = System.nanoTime() - firstThroughputRecvTime;
+          firstThroughputRecvTime = 0;
+          System.out.println("Write file for size: " + size);
+          currentOutPut = size + " " + noOfMessages + " " + time + " " + (messageCount + 0.0) / (time / 1000000000.0);
+          writeFile(currentOutPut);
+        }
       }
-    } else if (receiveState == ReceiveType.DATA) {
-      // LOG.info("Data receive: " + messageCount);
-      if (messageCount == noOfMessages) {
-        receiveState = ReceiveType.EMPTY;
-        long time = System.nanoTime() - firstThroughputRecvTime;
-        firstThroughputRecvTime = 0;
-        currentOutPut = size + " " + noOfMessages + " " + time + " " + (messageCount + 0.0)/ (time / 1000000000.0);
-        writeFile(currentOutPut);
-      }
+    } catch (Throwable t) {
+      t.printStackTrace();
     }
   }
 
@@ -80,7 +90,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
       out.println(line);
     } catch (IOException e) {
       //exception handling left as an exercise for the reader
-      LOG.error("Failed to write to the file");
+      LOG.error("Failed to write to the file", e);
     }
   }
 }
