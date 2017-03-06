@@ -13,6 +13,7 @@ public class DataGenerator {
   RabbitMQSender dataSender;
   RabbitMQSender controlSender;
   RabbitMQReceiver bestReceiver;
+  RabbitMQReceiver selfReceiver;
   FileIO resultBestIO;
   int dataSize;
   Kryo kryo = new Kryo();
@@ -21,7 +22,7 @@ public class DataGenerator {
   int count = 0;
   double sum = 0;
 
-  public DataGenerator(String url, String test, long sleepTime, int size, int messages) {
+  public DataGenerator(String url, String test, long sleepTime, int size, int messages, boolean self) {
     try {
       dataSender = new RabbitMQSender(url, "simbard_laser");
       controlSender = new RabbitMQSender(url, "simbard_control");
@@ -29,7 +30,13 @@ public class DataGenerator {
 
       dataSender.open();
       controlSender.open();
-      bestReceiver.listen(new TraceReceiver());
+
+      if (self) {
+        selfReceiver = new RabbitMQReceiver(url, "simbard_laser");
+        selfReceiver.listen(new SelfReceiver());
+      } else {
+        bestReceiver.listen(new TraceReceiver());
+      }
 
       resultBestIO = new FileIO(test, true);
       this.sleepTime = sleepTime;
@@ -68,9 +75,14 @@ public class DataGenerator {
     if (args.length < 3) {
       System.out.println("Please specify amqp url, filename and test name as arguments");
     }
-
-    DataGenerator fileBasedSimulator = new DataGenerator(args[0], args[1],
-        Long.parseLong(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+    DataGenerator fileBasedSimulator;
+    if (args.length == 5) {
+      fileBasedSimulator = new DataGenerator(args[0], args[1],
+          Long.parseLong(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), false);
+    } else {
+      fileBasedSimulator = new DataGenerator(args[0], args[1],
+          Long.parseLong(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), true);
+    }
     fileBasedSimulator.start();
   }
 
@@ -100,6 +112,27 @@ public class DataGenerator {
         count++;
       }
       // System.exit(1);
+    }
+  }
+
+  private class SelfReceiver implements MessageHandler {
+    @Override
+    public Map<String, String> getProperties() {
+      Map<String, String> props = new HashMap<String, String>();
+      props.put(MessagingConstants.RABBIT_ROUTING_KEY, "test.test.laser_scan");
+      props.put(MessagingConstants.RABBIT_QUEUE, "test.test.laser_scan");
+      return props;
+    }
+
+    @Override
+    public void onMessage(Message message) {
+      Object time = message.getProperties().get("time");
+      long receiveTime = System.nanoTime();
+
+      long l = Long.parseLong(time.toString());
+      sum += (receiveTime - l);
+      count++;
+      System.out.println((receiveTime - l));
     }
   }
 
