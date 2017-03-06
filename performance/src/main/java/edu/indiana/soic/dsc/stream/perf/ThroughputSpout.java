@@ -26,6 +26,7 @@ public class ThroughputSpout extends BaseRichSpout {
   private int outstandingTuples = 0;
   private int maxOutstandingTuples = 100;
   private boolean debug;
+  private int waitCount = 0;
 
   private enum SendingType {
     DATA,
@@ -52,7 +53,7 @@ public class ThroughputSpout extends BaseRichSpout {
 
       // we cannot send anything until we get enough acks
       if (outstandingTuples >= maxOutstandingTuples) {
-        if (debug) {
+        if (debug && waitCount % 100 == 0) {
           LOG.info(String.format("Waiting for acks %d: ", outstandingTuples));
         }
         return;
@@ -113,6 +114,8 @@ public class ThroughputSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
+    LOG.error("Failed to process tuple");
+    outstandingTuples--;
     super.fail(o);
   }
 
