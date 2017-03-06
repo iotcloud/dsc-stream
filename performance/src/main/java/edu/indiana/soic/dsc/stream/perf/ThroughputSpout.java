@@ -27,6 +27,7 @@ public class ThroughputSpout extends BaseRichSpout {
   private int maxOutstandingTuples = 100;
   private boolean debug;
   private int waitCount = 0;
+  private int sendCount = 0;
 
   private enum SendingType {
     DATA,
@@ -84,6 +85,10 @@ public class ThroughputSpout extends BaseRichSpout {
       list.add(System.nanoTime());
       String id = UUID.randomUUID().toString();
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
+      sendCount++;
+      if (debug) {
+        LOG.info("Send cound: ", sendCount);
+      }
       outstandingTuples++;
 
       if (sendState == SendingType.EMPTY) {
