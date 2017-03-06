@@ -87,7 +87,7 @@ public class ThroughputSpout extends BaseRichSpout {
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       sendCount++;
       if (debug) {
-        LOG.info("Send cound: ", sendCount);
+        LOG.info("Send cound: " + sendCount);
       }
       outstandingTuples++;
 
