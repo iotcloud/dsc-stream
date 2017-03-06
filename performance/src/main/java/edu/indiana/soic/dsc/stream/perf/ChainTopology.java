@@ -109,7 +109,7 @@ public class ChainTopology {
     } else if (throughput.equals("lf")) {
       conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
       conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, false);
-      buildLatencyFixedRateTopology(builder, streamTopologyBuilder, p);
+      buildLatencyFixedRateTopology(builder, streamTopologyBuilder, p, conf);
     }
 
     // put the no of parallel tasks as a config property
@@ -137,7 +137,7 @@ public class ChainTopology {
   }
 
   private static void buildLatencyFixedRateTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
-                                                    int parallel) {
+                                                    int parallel, Config conf) {
     // first create a rabbitmq Spout
     ErrorReporter reporter = new ErrorReporter() {
       @Override
@@ -152,20 +152,24 @@ public class ChainTopology {
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2), reporter);
     // set the first spout
     builder.setSpout(Constants.Topology.RECEIVE_SPOUT, dataSpout, 1);
+    conf.setComponentRam(Constants.Topology.RECEIVE_SPOUT, 4L * 1024 * 1024 * 1024);
 
     PassThroughBolt previousChainBolt = new PassThroughBolt();
     previousChainBolt.setFirst(true);
     builder.setBolt(Constants.Topology.CHAIN_BOLT + "_0", previousChainBolt, 1).
         shuffleGrouping(Constants.Topology.RECEIVE_SPOUT);
+    conf.setComponentRam(Constants.Topology.CHAIN_BOLT + "_0", 4L * 1024 * 1024 * 1024);
     for (int i = 1; i < parallel; i++) {
       PassThroughBolt chainBolt = new PassThroughBolt();
       builder.setBolt(Constants.Topology.CHAIN_BOLT + "_" + i, chainBolt, 1).
           shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (i - 1), Constants.Fields.CHAIN_STREAM);
+      conf.setComponentRam(Constants.Topology.CHAIN_BOLT + "_" + i, 4L * 1024 * 1024 * 1024);
       previousChainBolt = chainBolt;
     }
     previousChainBolt.setLast(true);
     builder.setBolt(Constants.Topology.RESULT_SEND_BOLT, valueSendBolt, 1).
         shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (parallel - 1), Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.Topology.CHAIN_BOLT + "_" + (parallel - 1), 4L * 1024 * 1024 * 1024);
   }
 
   private static void buildLatencyTopology(TopologyBuilder builder, StreamTopologyBuilder streamTopologyBuilder,
