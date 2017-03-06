@@ -17,17 +17,19 @@ def average(file_name, upperbound):
         avg_of_numbers = 0
         if len(numbers) > 0:
             sum_of_numbers = sum(numbers)
-            avg_of_numbers = sum(numbers[:(len(numbers))])/(len(numbers))
+            # avg_of_numbers = sum(numbers[1000:(len(numbers) - 100)])/(len(numbers) - 1100)
+            avg_of_numbers = sum(numbers[1000:4000])/(3000)
             # print min(numbers[:(len(numbers) - 100)])
     return avg_of_numbers
 
 def main():
     tasks = [10]
-    data = [32000, 64000, 128000, 256000, 512000]
-    data = [1000,2000,4000,8000,16000,32000,64000,128000, 256000, 512000]
+    data = [16000, 32000, 64000, 128000, 256000, 512000, 1024000]
+    #data = [1000,2000,4000,8000,16000,32000,64000,128000, 256000, 512000]
     #data = [128000, 256000]
-    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/tcp14/", data, tasks)
-    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/latency/rdma14/", data, tasks)
+    # data = [32000]
+    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/tcp_copy/latency5/", data, tasks)
+    calc("/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/tcp_original/latency5/", data, tasks)
 
 
 def calc(folder, data, tasks):
