@@ -24,6 +24,7 @@ public class ThroughputSpout extends BaseRichSpout {
   private byte []data = null;
   private int outstandingTuples = 0;
   private int maxOutstandingTuples = 100;
+  private boolean debug;
 
   private enum SendingType {
     DATA,
@@ -38,6 +39,7 @@ public class ThroughputSpout extends BaseRichSpout {
     messageSizes = (List<Integer>) stormConf.get(Constants.ARGS_THRPUT_SIZES);
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     this.collector = outputCollector;
+    this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
   }
 
   @Override
@@ -49,6 +51,9 @@ public class ThroughputSpout extends BaseRichSpout {
 
       // we cannot send anything until we get enough acks
       if (outstandingTuples >= maxOutstandingTuples) {
+        if (debug) {
+          LOG.info(String.format("Waiting for acks %d: ", outstandingTuples));
+        }
         return;
       }
 
