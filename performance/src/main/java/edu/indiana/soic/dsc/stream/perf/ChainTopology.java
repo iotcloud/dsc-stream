@@ -68,6 +68,7 @@ public class ChainTopology {
       // conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
       // conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, true);
       conf.setEnableAcking(true);
+      //cconf.setMaxSpoutPending(1000);
 
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
       String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
@@ -82,7 +83,7 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
       conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
-      buildThroughputTopology(builder, p, conf);
+      buildThroughputTopology2(builder, p, conf);
     } else if (throughput.equals("l")){
       conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, true);
       String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
@@ -132,7 +133,7 @@ public class ChainTopology {
       conf.setMaxTaskParallelism(120);
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("test", conf, builder.createTopology());
-      Thread.sleep(10000);
+      Thread.sleep(120000);
       cluster.shutdown();
     }
   }
@@ -195,6 +196,39 @@ public class ChainTopology {
 
     builder.setBolt(Constants.Topology.RESULT_SEND_BOLT, lastBolt, 1).
         shuffleGrouping(Constants.Topology.CHAIN_BOLT + "_" + (parallel - 1), Constants.Fields.CHAIN_STREAM);
+  }
+
+  private static void buildThroughputTopology2(TopologyBuilder builder, int stages, Config conf) {
+    ThroughputSpout spout = new ThroughputSpout();
+    ThroughputLastBolt lastBolt = new ThroughputLastBolt();
+    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, 4L * 1024 * 1024 * 1024);
+
+    if (stages > 0) {
+      ThroughputPassthroughBolt previousBolt = new ThroughputPassthroughBolt();
+      builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", previousBolt).
+          shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT, Constants.Fields.CHAIN_STREAM);
+      conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", 4L * 1024 * 1024 * 1024);
+
+      for (int i = 1; i < stages; i++) {
+        ThroughputPassthroughBolt bolt = new ThroughputPassthroughBolt();
+        builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + i, bolt).
+            shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + (i - 1),
+                Constants.Fields.CHAIN_STREAM);
+        conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + i, 4L * 1024 * 1024 * 1024);
+      }
+
+      builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt).
+          shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + (stages - 1),
+              Constants.Fields.CHAIN_STREAM);
+
+      conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, 4L * 1024 * 1024 * 1024);
+    } else {
+      builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt).
+          shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT,
+              Constants.Fields.CHAIN_STREAM);
+      conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, 4L * 1024 * 1024 * 1024);
+    }
   }
 
   private static void buildThroughputTopology(TopologyBuilder builder, int stages, Config conf) {

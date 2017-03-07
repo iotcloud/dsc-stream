@@ -58,12 +58,12 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
 
       if (debug) {
         LOG.info("Messagre received count: " + count++);
-        Utils.printTime(id, size, time, previousTime);
+        // Utils.printTime(id, size, time, previousTime);
       }
 
-      List<Tuple> anchors = new ArrayList<>();
-      anchors.add(tuple);
-      collector.emit(Constants.Fields.CHAIN_STREAM, anchors, list);
+//      List<Tuple> anchors = new ArrayList<>();
+//      anchors.add(tuple);
+      collector.emit(Constants.Fields.CHAIN_STREAM, tuple, list);
       collector.ack(tuple);
     } catch (Throwable t) {
       t.printStackTrace();
