@@ -33,6 +33,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private int ackReceiveCount = 0;
   private long firstThroughputSendTime = 0;
   private String fileName;
+  private String id;
 
   private enum SendingType {
     DATA,
@@ -49,6 +50,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     this.collector = outputCollector;
     this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
+    id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
   }
 
   @Override
@@ -156,13 +158,14 @@ public class ThroughputAckSpout extends BaseRichSpout {
   }
 
   private void writeFile(String line) {
-    try(FileWriter fw = new FileWriter(fileName, true);
+    try(FileWriter fw = new FileWriter(fileName + id, true);
         BufferedWriter bw = new BufferedWriter(fw);
         PrintWriter out = new PrintWriter(bw)) {
       out.println(line);
     } catch (IOException e) {
       //exception handling left as an exercise for the reader
       LOG.error("Failed to write to the file", e);
+      e.printStackTrace();
     }
   }
 }
