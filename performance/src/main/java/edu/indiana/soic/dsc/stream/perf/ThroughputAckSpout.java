@@ -8,11 +8,15 @@ import backtype.storm.tuple.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ThroughputSpout extends BaseRichSpout {
+public class ThroughputAckSpout extends BaseRichSpout {
   private static Logger LOG = LoggerFactory.getLogger(ThroughputSpout.class);
 
   private long noOfMessages = 0;
@@ -20,13 +24,15 @@ public class ThroughputSpout extends BaseRichSpout {
   private List<Integer> messageSizes = new ArrayList<Integer>();
   private int currentSendIndex = 0;
   private SpoutOutputCollector collector;
-  private int currentCount = 0;
+  private int currentSendCount = 0;
   private byte []data = null;
   private int outstandingTuples = 0;
   private int maxOutstandingTuples = 100;
   private boolean debug;
-  private int waitCount = 0;
-  private int sendCount = 0;
+  private int totalSendCount = 0;
+  private int ackReceiveCount = 0;
+  private long firstThroughputSendTime = 0;
+  private String fileName;
 
   private enum SendingType {
     DATA,
@@ -42,6 +48,7 @@ public class ThroughputSpout extends BaseRichSpout {
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     this.collector = outputCollector;
     this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
+    fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
   }
 
   @Override
@@ -54,13 +61,13 @@ public class ThroughputSpout extends BaseRichSpout {
       // we cannot send anything until we get enough acks
       if (outstandingTuples >= maxOutstandingTuples) {
         if (debug) {
-          LOG.info("Next tuple return, Send cound: " + sendCount + " outstanding: " + outstandingTuples);
+          LOG.info("Next tuple return, Send cound: " + totalSendCount + " outstanding: " + outstandingTuples);
         }
         return;
       }
 
       int size = 1;
-      if (currentCount == 0) {
+      if (currentSendCount == 0) {
         if (sendState == SendingType.EMPTY) {
           // LOG.info("Empty message generate");
           data = Utils.generateData(1);
@@ -73,40 +80,24 @@ public class ThroughputSpout extends BaseRichSpout {
         if (sendState == SendingType.DATA) {
           size = messageSizes.get(currentSendIndex);
         }
+        firstThroughputSendTime = System.nanoTime();
       }
-      currentCount++;
+      currentSendCount++;
 
       List<Object> list = new ArrayList<Object>();
       list.add(data);
-      list.add(currentCount);
+      list.add(currentSendCount);
       list.add(size);
       list.add(System.nanoTime());
       list.add(System.nanoTime());
-//      String id = UUID.randomUUID().toString();
-      String id = String.valueOf(sendCount);
+      // String id = UUID.randomUUID().toString();
+      String id = String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
-        LOG.info("Send cound: " + sendCount + " outstanding: " + outstandingTuples);
+        LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples);
       }
-      sendCount++;
+      totalSendCount++;
       outstandingTuples++;
-
-      if (sendState == SendingType.EMPTY) {
-        if (currentCount >= noOfEmptyMessages) {
-          currentCount = 0;
-          if (currentSendIndex < messageSizes.size()) {
-            LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
-            System.out.println("Started processing size: " + messageSizes.get(currentSendIndex));
-          }
-          sendState = SendingType.DATA;
-        }
-      } else if (sendState == SendingType.DATA) {
-        if (currentCount >= noOfMessages) {
-          currentCount = 0;
-          currentSendIndex++;
-          sendState = SendingType.EMPTY;
-        }
-      }
     } catch (Throwable t) {
       t.printStackTrace();
     }
@@ -114,15 +105,44 @@ public class ThroughputSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-    LOG.error("Acked tuple: "  + o.toString());
-    outstandingTuples--;
+//    LOG.error("Acked tuple: "  + o.toString());
+    handleAck(false, 0);
   }
 
   @Override
   public void fail(Object o) {
-    LOG.error("Failed to process tuple: "  + o.toString());
+//    LOG.error("Failed to process tuple: "  + o.toString());
+    handleAck(true, o);
+  }
+
+  public void handleAck(boolean fail, Object ack) {
     outstandingTuples--;
-    super.fail(o);
+    ackReceiveCount++;
+    if (sendState == SendingType.EMPTY) {
+      if (currentSendCount >= noOfEmptyMessages && ackReceiveCount >= noOfEmptyMessages) {
+        currentSendCount = 0;
+        if (currentSendIndex < messageSizes.size()) {
+          LOG.info("Started processing size: " + messageSizes.get(currentSendIndex));
+          System.out.println("Started processing size: " + messageSizes.get(currentSendIndex));
+        }
+        ackReceiveCount = 0;
+        sendState = SendingType.DATA;
+      }
+    } else if (sendState == SendingType.DATA) {
+      if (currentSendCount >= noOfMessages && ackReceiveCount >= noOfMessages) {
+        int size = messageSizes.get(currentSendIndex);
+        System.out.println("Write file for size: " + size);
+        long time = System.nanoTime() - firstThroughputSendTime;
+        String currentOutPut = size + " " + noOfMessages + " " + time + " " + (noOfMessages + 0.0) / (time / 1000000000.0);
+        writeFile(currentOutPut);
+
+        currentSendCount = 0;
+        currentSendIndex++;
+        ackReceiveCount = 0;
+        sendState = SendingType.EMPTY;
+
+      }
+    }
   }
 
   @Override
@@ -134,4 +154,16 @@ public class ThroughputSpout extends BaseRichSpout {
         Constants.Fields.TIME_FIELD,
         Constants.Fields.TIME_FIELD2));
   }
+
+  private void writeFile(String line) {
+    try(FileWriter fw = new FileWriter(fileName, true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        PrintWriter out = new PrintWriter(bw)) {
+      out.println(line);
+    } catch (IOException e) {
+      //exception handling left as an exercise for the reader
+      LOG.error("Failed to write to the file", e);
+    }
+  }
 }
+

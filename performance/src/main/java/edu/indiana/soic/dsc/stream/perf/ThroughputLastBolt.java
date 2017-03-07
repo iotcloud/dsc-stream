@@ -18,10 +18,10 @@ public class ThroughputLastBolt extends BaseRichBolt {
   private int noOfEmptyMessages = 0;
   private String fileName;
   private long firstThroughputRecvTime = 0;
-  private String currentOutPut;
   private ReceiveType receiveState = ReceiveType.EMPTY;
   private OutputCollector outputCollector;
   private int count = 0;
+  private boolean save = true;
 
   private enum ReceiveType {
     DATA,
@@ -33,6 +33,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
     noOfMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
+    save = !((String)stormConf.get(Constants.ARGS_MODE)).equals("ta");
     this.outputCollector = outputCollector;
   }
 
@@ -73,12 +74,14 @@ public class ThroughputLastBolt extends BaseRichBolt {
           receiveState = ReceiveType.EMPTY;
           long time = System.nanoTime() - firstThroughputRecvTime;
           firstThroughputRecvTime = 0;
-          System.out.println("Write file for size: " + size);
-          currentOutPut = size + " " + noOfMessages + " " + time + " " + (messageCount + 0.0) / (time / 1000000000.0);
-          writeFile(currentOutPut);
+          if (save) {
+            System.out.println("Write file for size: " + size);
+            String currentOutPut = size + " " + noOfMessages + " " + time + " " + (messageCount + 0.0) / (time / 1000000000.0);
+            writeFile(currentOutPut);
+          }
         }
       }
-      LOG.info("Count: " + count++);
+      // LOG.info("Count: " + count++);
     } catch (Throwable t) {
       t.printStackTrace();
     }
