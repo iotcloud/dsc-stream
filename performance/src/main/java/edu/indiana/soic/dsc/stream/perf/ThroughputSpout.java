@@ -83,7 +83,8 @@ public class ThroughputSpout extends BaseRichSpout {
       list.add(size);
       list.add(System.nanoTime());
       list.add(System.nanoTime());
-      String id = UUID.randomUUID().toString();
+//      String id = UUID.randomUUID().toString();
+      String id = String.valueOf(sendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
         LOG.info("Send cound: " + sendCount + " outstanding: " + outstandingTuples);
@@ -119,7 +120,7 @@ public class ThroughputSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
-    LOG.error("Failed to process tuple");
+    LOG.error("Failed to process tuple: "  + o.toString());
     outstandingTuples--;
     super.fail(o);
   }
