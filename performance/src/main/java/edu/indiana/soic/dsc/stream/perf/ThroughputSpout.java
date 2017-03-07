@@ -55,7 +55,7 @@ public class ThroughputSpout extends BaseRichSpout {
       // we cannot send anything until we get enough acks
       if (outstandingTuples >= maxOutstandingTuples) {
         if (debug) {
-          LOG.info("Send cound: " + sendCount + " outstanding: " + outstandingTuples);
+          LOG.info("Next tuple return, Send cound: " + sendCount + " outstanding: " + outstandingTuples);
         }
         return;
       }
@@ -85,6 +85,9 @@ public class ThroughputSpout extends BaseRichSpout {
       list.add(System.nanoTime());
       String id = UUID.randomUUID().toString();
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
+      if (debug) {
+        LOG.info("Send cound: " + sendCount + " outstanding: " + outstandingTuples);
+      }
       sendCount++;
       outstandingTuples++;
 
