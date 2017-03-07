@@ -107,13 +107,15 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-//    LOG.error("Acked tuple: "  + o.toString());
+    if (debug)
+      LOG.error("Acked tuple: "  + o.toString());
     handleAck(false, 0);
   }
 
   @Override
   public void fail(Object o) {
-//    LOG.error("Failed to process tuple: "  + o.toString());
+    if (debug)
+      LOG.error("Failed to process tuple: "  + o.toString());
     handleAck(true, o);
   }
 
