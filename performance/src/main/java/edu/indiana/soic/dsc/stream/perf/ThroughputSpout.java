@@ -115,6 +115,7 @@ public class ThroughputSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
+    LOG.error("Acked tuple: "  + o.toString());
     outstandingTuples--;
   }
 
