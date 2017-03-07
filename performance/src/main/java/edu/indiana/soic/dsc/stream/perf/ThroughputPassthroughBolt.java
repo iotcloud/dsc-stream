@@ -19,6 +19,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
   private List<Integer> messageSizes = new ArrayList<Integer>();
   private String id;
   private boolean debug;
+  private int count;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -56,7 +57,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
       list.add(System.nanoTime());
 
       if (debug) {
-        LOG.info("Messagre received");
+        LOG.info("Messagre received count: " + count++);
         Utils.printTime(id, size, time, previousTime);
       }
 
