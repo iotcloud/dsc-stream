@@ -23,6 +23,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
   private int count = 0;
   private boolean save = true;
   private int messageCount = 0;
+  private boolean debug = false;
 
   private enum ReceiveType {
     DATA,
@@ -40,6 +41,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
       noOfMessages = noOfMessages / parallel;
       noOfEmptyMessages = noOfEmptyMessages / parallel;
     }
+    this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
 
     this.outputCollector = outputCollector;
   }
@@ -67,6 +69,9 @@ public class ThroughputLastBolt extends BaseRichBolt {
       }
 
       Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+      if (debug) {
+        LOG.info("Received tuple: " + count++);
+      }
       // Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
       messageCount++;
       if (receiveState == ReceiveType.EMPTY) {
