@@ -22,6 +22,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
   private OutputCollector outputCollector;
   private int count = 0;
   private boolean save = true;
+  private int messageCount = 0;
 
   private enum ReceiveType {
     DATA,
@@ -34,6 +35,12 @@ public class ThroughputLastBolt extends BaseRichBolt {
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
     save = !((String)stormConf.get(Constants.ARGS_MODE)).equals("ta");
+    int parallel = (int) stormConf.get(Constants.ARGS_PARALLEL);
+    if (!((String)stormConf.get(Constants.ARGS_MODE)).equals("t")) {
+      noOfMessages = noOfMessages / parallel;
+      noOfEmptyMessages = noOfEmptyMessages / parallel;
+    }
+
     this.outputCollector = outputCollector;
   }
 
@@ -60,13 +67,14 @@ public class ThroughputLastBolt extends BaseRichBolt {
       }
 
       Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
-      Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
-
+      // Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+      messageCount++;
       if (receiveState == ReceiveType.EMPTY) {
         // LOG.info("Empty receive: " + messageCount);
         if (messageCount == noOfEmptyMessages) {
           receiveState = ReceiveType.DATA;
           firstThroughputRecvTime = System.nanoTime();
+          messageCount = 0;
         }
       } else if (receiveState == ReceiveType.DATA) {
         // LOG.info("Data receive: " + messageCount);
@@ -74,6 +82,7 @@ public class ThroughputLastBolt extends BaseRichBolt {
           receiveState = ReceiveType.EMPTY;
           long time = System.nanoTime() - firstThroughputRecvTime;
           firstThroughputRecvTime = 0;
+          messageCount = 0;
           if (save) {
             System.out.println("Write file for size: " + size);
             String currentOutPut = size + " " + noOfMessages + " " + time + " " + (messageCount + 0.0) / (time / 1000000000.0);
