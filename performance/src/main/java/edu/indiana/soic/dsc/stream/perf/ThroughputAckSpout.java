@@ -34,6 +34,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private long firstThroughputSendTime = 0;
   private String fileName;
   private String id;
+  private long start = 0;
 
   private enum SendingType {
     DATA,
@@ -51,11 +52,16 @@ public class ThroughputAckSpout extends BaseRichSpout {
     this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
     id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
+    start = System.currentTimeMillis();
   }
 
   @Override
   public void nextTuple() {
     try {
+      if (System.currentTimeMillis() - start < 15000 ) {
+        return;
+      }
+
       if (currentSendIndex >= messageSizes.size()) {
         return;
       }
