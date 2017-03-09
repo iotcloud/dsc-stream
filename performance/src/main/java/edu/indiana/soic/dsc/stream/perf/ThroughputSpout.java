@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class ThroughputSpout extends BaseRichSpout {
   private static Logger LOG = LoggerFactory.getLogger(ThroughputSpout.class);
@@ -82,8 +83,8 @@ public class ThroughputSpout extends BaseRichSpout {
       list.add(size);
       list.add(System.nanoTime());
       list.add(System.nanoTime());
-//      String id = UUID.randomUUID().toString();
-      String id = String.valueOf(sendCount);
+      String id = UUID.randomUUID().toString();
+//      String id = String.valueOf(sendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
         LOG.info("Send cound: " + sendCount + " outstanding: " + outstandingTuples);

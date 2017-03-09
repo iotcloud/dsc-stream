@@ -15,6 +15,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class ThroughputAckSpout extends BaseRichSpout {
   private static Logger LOG = LoggerFactory.getLogger(ThroughputSpout.class);
@@ -106,11 +107,11 @@ public class ThroughputAckSpout extends BaseRichSpout {
       list.add(size);
       list.add(System.nanoTime());
       list.add(System.nanoTime());
-      // String id = UUID.randomUUID().toString();
-      String id = String.valueOf(totalSendCount);
+      String id = UUID.randomUUID().toString();
+//      String id = String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
-        LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples);
+        LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples + " id: " + id);
       }
       totalSendCount++;
       outstandingTuples++;
