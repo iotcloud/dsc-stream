@@ -111,7 +111,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
 //      String id = String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
-        LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples + " id: " + id);
+        if (totalSendCount % 10 == 0) {
+          LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples + " id: " + id);
+        }
       }
       totalSendCount++;
       outstandingTuples++;
@@ -122,15 +124,17 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-    if (debug)
-      LOG.error("Acked tuple: "  + o.toString());
+    if (debug && totalSendCount % 10 == 0) {
+      LOG.error("Acked tuple: " + o.toString());
+    }
     handleAck(false, 0);
   }
 
   @Override
   public void fail(Object o) {
-    if (debug)
-      LOG.error("Failed to process tuple: "  + o.toString());
+    if (debug && totalSendCount % 10 == 0) {
+      LOG.error("Failed to process tuple: " + o.toString());
+    }
     handleAck(true, o);
   }
 
