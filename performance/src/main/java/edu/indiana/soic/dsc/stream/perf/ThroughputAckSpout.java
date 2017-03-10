@@ -132,9 +132,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
-    if (debug && totalSendCount % 10 == 0) {
-      LOG.error("Failed to process tuple: " + o.toString());
-    }
+    LOG.error("Failed to process tuple: " + o.toString());
     handleAck(true, o);
   }
 
