@@ -46,7 +46,7 @@ public class ChainTopology {
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_SIZES, true, "Throughput no of messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_SEND_INTERVAL, true, "Send interval of messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_DEBUG, false, "Print debug messages", false));
-    options.addOption(Utils.createOption(Constants.ARGS_PRINT_INTERVAL, false, "Print debug messages", false));
+    options.addOption(Utils.createOption(Constants.ARGS_PRINT_INTERVAL, true, "Print debug messages", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
