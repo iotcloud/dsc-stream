@@ -87,9 +87,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
         return;
       }
 
-      if (System.currentTimeMillis() - lastSendTime < 2) {
-        return;
-      }
+//      if (System.currentTimeMillis() - lastSendTime < 2) {
+//        return;
+//      }
       lastSendTime = System.currentTimeMillis();
       int size = 1;
       if (currentSendCount == 0) {
