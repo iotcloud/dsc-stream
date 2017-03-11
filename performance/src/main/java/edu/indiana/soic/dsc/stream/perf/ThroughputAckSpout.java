@@ -36,6 +36,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private String fileName;
   private String id;
   private long start = 0;
+  private long lastSendTime = 0;
 
   private enum SendingType {
     DATA,
@@ -54,6 +55,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
     id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
     start = System.currentTimeMillis();
+    lastSendTime = System.currentTimeMillis();
   }
 
   @Override
@@ -82,6 +84,12 @@ public class ThroughputAckSpout extends BaseRichSpout {
       if (sendState == SendingType.EMPTY && currentSendCount >= noOfEmptyMessages) {
         return;
       }
+
+      if (System.currentTimeMillis() - lastSendTime < 2) {
+        return;
+      }
+
+      lastSendTime = System.currentTimeMillis();
 
       int size = 1;
       if (currentSendCount == 0) {
