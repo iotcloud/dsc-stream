@@ -14,6 +14,7 @@ public class Constants {
   public static final String ARGS_ASYNCHRONOUS = "as";
   public static final String ARGS_PIPE_SPLIT = "pls";
   public static final String ARGS_DEBUG = "g";
+  public static final String ARGS_PRINT_INTERVAL = "pi";
 
   public static final String ARGS_THRPUT_SIZES = "thrSizes";
   public static final String ARGS_THRPUT_NO_MSGS = "thrN";

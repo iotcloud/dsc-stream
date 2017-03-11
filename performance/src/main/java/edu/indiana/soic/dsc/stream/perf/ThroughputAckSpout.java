@@ -36,6 +36,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private String fileName;
   private String id;
   private long start = 0;
+  private int printInveral = 0;
 
   private enum SendingType {
     DATA,
@@ -52,6 +53,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     this.collector = outputCollector;
     this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
+    printInveral = (int) stormConf.get(Constants.ARGS_PRINT_INTERVAL);
     id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
     start = System.currentTimeMillis();
   }
@@ -124,7 +126,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-    if (debug && totalSendCount % 10 == 0) {
+    if (debug && totalSendCount % printInveral == 0) {
       LOG.error("Acked tuple: " + o.toString());
     }
     handleAck(false, 0);
