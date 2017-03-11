@@ -37,6 +37,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private String id;
   private long start = 0;
   private int printInveral = 0;
+  private long lastSendTime = 0;
 
   private enum SendingType {
     DATA,
@@ -56,6 +57,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     printInveral = (int) stormConf.get(Constants.ARGS_PRINT_INTERVAL);
     id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
     start = System.currentTimeMillis();
+    lastSendTime = System.currentTimeMillis();
   }
 
   @Override
@@ -85,6 +87,10 @@ public class ThroughputAckSpout extends BaseRichSpout {
         return;
       }
 
+      if (System.currentTimeMillis() - lastSendTime < 2) {
+        return;
+      }
+      lastSendTime = System.currentTimeMillis();
       int size = 1;
       if (currentSendCount == 0) {
         if (sendState == SendingType.EMPTY) {
