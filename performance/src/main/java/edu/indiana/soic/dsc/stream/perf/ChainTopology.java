@@ -46,6 +46,7 @@ public class ChainTopology {
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_SIZES, true, "Throughput no of messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_SEND_INTERVAL, true, "Send interval of messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_DEBUG, false, "Print debug messages", false));
+    options.addOption(Utils.createOption(Constants.ARGS_PRINT_INTERVAL, true, "Print debug messages", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -56,12 +57,18 @@ public class ChainTopology {
     int p = Integer.parseInt(pValue);
     String mode = cmd.getOptionValue(Constants.ARGS_MODE);
     int streamManagers = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_SREAM_MGRS));
+    int interval = 1;
+    if (cmd.hasOption(Constants.ARGS_PRINT_INTERVAL)) {
+      interval = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_PRINT_INTERVAL));
+    }
 
     Config conf = new Config();
     conf.setDebug(false);
     conf.put(Constants.ARGS_DEBUG, debug);
     conf.put(Constants.ARGS_MODE, mode);
     conf.put(Constants.ARGS_PARALLEL, p);
+    conf.put(Constants.ARGS_PRINT_INTERVAL, interval);
+
 
     StreamTopologyBuilder streamTopologyBuilder;
     streamTopologyBuilder = new StreamTopologyBuilder();

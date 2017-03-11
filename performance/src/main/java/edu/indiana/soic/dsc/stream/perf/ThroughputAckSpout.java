@@ -36,7 +36,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private String fileName;
   private String id;
   private long start = 0;
-  private long lastSendTime = 0;
+  private int printInveral = 0;
 
   private enum SendingType {
     DATA,
@@ -53,9 +53,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
     this.collector = outputCollector;
     this.debug = (boolean) stormConf.get(Constants.ARGS_DEBUG);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
+    printInveral = (int) stormConf.get(Constants.ARGS_PRINT_INTERVAL);
     id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
     start = System.currentTimeMillis();
-    lastSendTime = System.currentTimeMillis();
   }
 
   @Override
@@ -85,12 +85,6 @@ public class ThroughputAckSpout extends BaseRichSpout {
         return;
       }
 
-      if (System.currentTimeMillis() - lastSendTime < 2) {
-        return;
-      }
-
-      lastSendTime = System.currentTimeMillis();
-
       int size = 1;
       if (currentSendCount == 0) {
         if (sendState == SendingType.EMPTY) {
@@ -119,7 +113,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
 //      String id = String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
-        LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples + " id: " + id);
+        if (totalSendCount % printInveral == 0) {
+          LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples + " id: " + id);
+        }
       }
       totalSendCount++;
       outstandingTuples++;
@@ -130,15 +126,15 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-    if (debug)
-      LOG.error("Acked tuple: "  + o.toString());
+    if (debug && ackReceiveCount % printInveral == 0) {
+      LOG.error("Acked tuple: " + o.toString());
+    }
     handleAck(false, 0);
   }
 
   @Override
   public void fail(Object o) {
-    if (debug)
-      LOG.error("Failed to process tuple: "  + o.toString());
+    LOG.error("Failed to process tuple: " + o.toString());
     handleAck(true, o);
   }
 
