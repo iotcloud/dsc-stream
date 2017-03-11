@@ -113,7 +113,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 //      String id = String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
-        if (totalSendCount % 10 == 0) {
+        if (totalSendCount % printInveral == 0) {
           LOG.info("Send cound: " + totalSendCount + " outstanding: " + outstandingTuples + " id: " + id);
         }
       }
@@ -126,7 +126,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-    if (debug && totalSendCount % printInveral == 0) {
+    if (debug && ackReceiveCount % printInveral == 0) {
       LOG.error("Acked tuple: " + o.toString());
     }
     handleAck(false, 0);
