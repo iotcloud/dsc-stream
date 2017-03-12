@@ -28,7 +28,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private int currentSendCount = 0;
   private byte []data = null;
   private int outstandingTuples = 0;
-  private int maxOutstandingTuples = 100;
+  private int maxOutstandingTuples = 10;
   private boolean debug;
   private int totalSendCount = 0;
   private int ackReceiveCount = 0;
