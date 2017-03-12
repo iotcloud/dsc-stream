@@ -101,11 +101,11 @@ public class ThroughputAckSpout extends BaseRichSpout {
           size = messageSizes.get(currentSendIndex);
           data = Utils.generateData(size);
         }
+        firstThroughputSendTime = System.currentTimeMillis();
       } else {
         if (sendState == SendingType.DATA) {
           size = messageSizes.get(currentSendIndex);
         }
-        firstThroughputSendTime = System.currentTimeMillis();
       }
       currentSendCount++;
 
