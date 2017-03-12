@@ -38,6 +38,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private long start = 0;
   private int printInveral = 0;
   private long lastSendTime = 0;
+  private boolean startFailing = false;
 
   private enum SendingType {
     DATA,
@@ -132,7 +133,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void ack(Object o) {
-    if (debug && ackReceiveCount % printInveral == 0) {
+    if ((debug && ackReceiveCount % printInveral == 0) || startFailing) {
       LOG.error("Acked tuple: " + o.toString());
     }
     handleAck(false, 0);
@@ -141,6 +142,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void fail(Object o) {
     LOG.error("Failed to process tuple: " + o.toString());
+    startFailing = true;
     handleAck(true, o);
   }
 
