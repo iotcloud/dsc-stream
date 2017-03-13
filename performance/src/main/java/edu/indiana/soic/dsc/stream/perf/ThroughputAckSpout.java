@@ -7,6 +7,7 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.immutable.Stream;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -42,6 +43,8 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private int totalAckCount = 0;
   private int totalFailCount = 0;
   private boolean fileWritten = false;
+  private int spoutParallel = 1;
+  private int parallel = 1;
 
   private enum SendingType {
     DATA,
@@ -62,6 +65,8 @@ public class ThroughputAckSpout extends BaseRichSpout {
     id = topologyContext.getThisComponentId() + "_" + topologyContext.getThisTaskId();
     start = System.currentTimeMillis();
     lastSendTime = System.currentTimeMillis();
+    spoutParallel = (int) stormConf.get(Constants.ARGS_SPOUT_PARALLEL);
+    parallel = (int) stormConf.get(Constants.ARGS_PARALLEL);
   }
 
   @Override
@@ -169,7 +174,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
         int size = messageSizes.get(currentSendIndex);
         System.out.println("Write file for size: " + size + String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
         long time = System.currentTimeMillis() - firstThroughputSendTime;
-        String currentOutPut = size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
+        String currentOutPut =  spoutParallel + "x" + parallel + " " + size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
         writeFile(currentOutPut);
         fileWritten = true;
       } else if (currentSendCount >= noOfMessages && ackReceiveCount >= noOfMessages) {

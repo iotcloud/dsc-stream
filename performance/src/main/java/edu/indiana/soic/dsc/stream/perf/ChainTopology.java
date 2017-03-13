@@ -73,6 +73,7 @@ public class ChainTopology {
     conf.put(Constants.ARGS_DEBUG, debug);
     conf.put(Constants.ARGS_MODE, mode);
     conf.put(Constants.ARGS_PARALLEL, p);
+    conf.put(Constants.ARGS_SPOUT_PARALLEL, spoutParallel);
     conf.put(Constants.ARGS_PRINT_INTERVAL, interval);
 
 
