@@ -1,5 +1,7 @@
 package edu.indiana.soic.dsc.stream.perf;
 
+import org.apache.commons.cli.Option;
+
 public class Constants {
   public static final String ARGS_NAME = "name";
   public static final String ARGS_LOCAL = "local";
@@ -25,6 +27,7 @@ public class Constants {
 
   // configurations
   public static final String RABBITMQ_URL = "rabbitmq_url";
+  public static final String ARGS_SPOUT_PARALLEL = "sp";
 
   public abstract class Fields {
     public static final String BODY = "body";

@@ -38,6 +38,7 @@ public class ChainTopology {
     options.addOption(Constants.ARGS_NAME, true, "Name of the topology");
     options.addOption(Constants.ARGS_LOCAL, false, "Weather we want run locally");
     options.addOption(Constants.ARGS_PARALLEL, true, "No of parallel nodes");
+    options.addOption(Utils.createOption(Constants.ARGS_SPOUT_PARALLEL, true, "No of parallel spout nodes", false));
     options.addOption(Constants.ARGS_SREAM_MGRS, true, "No of stream managers");
     options.addOption(Utils.createOption(Constants.ARGS_MODE, true, "Throughput mode", false));
     options.addOption(Utils.createOption(Constants.ARGS_THRPUT_FILENAME, true, "Throughput file name", false));
@@ -60,6 +61,11 @@ public class ChainTopology {
     int interval = 1;
     if (cmd.hasOption(Constants.ARGS_PRINT_INTERVAL)) {
       interval = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_PRINT_INTERVAL));
+    }
+
+    int spoutParallel = 1;
+    if (cmd.hasOption(Constants.ARGS_SPOUT_PARALLEL)) {
+      spoutParallel = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_SPOUT_PARALLEL));
     }
 
     Config conf = new Config();
@@ -115,7 +121,7 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
       conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
-      buildThroughputTopologyAck(builder, p, conf);
+      buildThroughputTopologyAck(builder, p, conf, spoutParallel);
     }  else if (mode.equals("tna")) {
       // we are not going to track individual messages, message loss is inherent in the decoder
       // also we cannot replay message because of the decoder
@@ -264,10 +270,10 @@ public class ChainTopology {
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, 4L * 1024 * 1024 * 1024);
   }
 
-  private static void buildThroughputTopologyAck(TopologyBuilder builder, int stages, Config conf) {
+  private static void buildThroughputTopologyAck(TopologyBuilder builder, int stages, Config conf, int spoutParallel) {
     ThroughputAckSpout spout = new ThroughputAckSpout();
     ThroughputLastBolt lastBolt = new ThroughputLastBolt();
-    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout);
+    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout, spoutParallel);
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, 4L * 1024 * 1024 * 1024);
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, stages).
