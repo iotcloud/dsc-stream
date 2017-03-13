@@ -66,7 +66,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     try {
-      if (System.currentTimeMillis() - start < 15000 ) {
+      if (System.currentTimeMillis() - start < 10000 ) {
         return;
       }
 
@@ -136,7 +136,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void ack(Object o) {
     if ((debug && ackReceiveCount % printInveral == 0) || startFailing) {
-      LOG.error("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
+      LOG.info("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
     }
     totalAckCount++;
     handleAck(false, 0);
@@ -144,7 +144,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
-    LOG.error("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
+    LOG.info("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
     startFailing = true;
     totalFailCount++;
     handleAck(true, o);
