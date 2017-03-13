@@ -41,6 +41,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private boolean startFailing = false;
   private int totalAckCount = 0;
   private int totalFailCount = 0;
+  private boolean fileWritten = false;
 
   private enum SendingType {
     DATA,
@@ -164,12 +165,13 @@ public class ThroughputAckSpout extends BaseRichSpout {
         sendState = SendingType.DATA;
       }
     } else if (sendState == SendingType.DATA) {
-      if (currentSendCount >= noOfMessages - noOfEmptyMessages && ackReceiveCount >= noOfMessages - noOfEmptyMessages) {
+      if (currentSendCount >= noOfMessages - noOfEmptyMessages && ackReceiveCount >= noOfMessages - noOfEmptyMessages && !fileWritten) {
         int size = messageSizes.get(currentSendIndex);
         System.out.println("Write file for size: " + size + String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
         long time = System.currentTimeMillis() - firstThroughputSendTime;
         String currentOutPut = size + " " + noOfMessages + " " + time + " " + (noOfMessages + 0.0) / (time / 1000.0);
         writeFile(currentOutPut);
+        fileWritten = true;
       } else if (currentSendCount >= noOfMessages && ackReceiveCount >= noOfMessages) {
         int size = messageSizes.get(currentSendIndex);
         LOG.info("Finished message size: " + size);
