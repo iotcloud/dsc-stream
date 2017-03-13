@@ -71,10 +71,10 @@ public class ThroughputLastBolt extends BaseRichBolt {
       }
 
       Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
-      count++;
-      if (debug && count % printInveral == 0) {
+      if (debug && messageCount % printInveral == 0) {
         LOG.info("Received tuple: " + count);
       }
+      count++;
       // Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
       messageCount++;
       if (receiveState == ReceiveType.EMPTY) {
