@@ -67,6 +67,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     lastSendTime = System.currentTimeMillis();
     spoutParallel = (int) stormConf.get(Constants.ARGS_SPOUT_PARALLEL);
     parallel = (int) stormConf.get(Constants.ARGS_PARALLEL);
+    maxOutstandingTuples = (int) stormConf.get(Constants.ARGS_MAX_PENDING);
   }
 
   @Override
