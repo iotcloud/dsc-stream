@@ -184,7 +184,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
         currentSendIndex++;
         ackReceiveCount = 0;
         sendState = SendingType.EMPTY;
-
+        fileWritten = false;
       }
     }
   }
