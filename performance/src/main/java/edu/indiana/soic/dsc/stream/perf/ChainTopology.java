@@ -62,7 +62,7 @@ public class ChainTopology {
     int interval = 1;
     int maxPending = 1000;
     if (cmd.hasOption(Constants.ARGS_MAX_PENDING)) {
-      maxPending = Integer.parseInt(Constants.ARGS_MAX_PENDING);
+      maxPending = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_MAX_PENDING));
     }
 
     if (cmd.hasOption(Constants.ARGS_PRINT_INTERVAL)) {
