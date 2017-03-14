@@ -28,6 +28,7 @@ public class Constants {
   // configurations
   public static final String RABBITMQ_URL = "rabbitmq_url";
   public static final String ARGS_SPOUT_PARALLEL = "sp";
+  public static final String ARGS_MAX_PENDING = "mp";
 
   public abstract class Fields {
     public static final String BODY = "body";

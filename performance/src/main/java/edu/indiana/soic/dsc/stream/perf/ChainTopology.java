@@ -48,6 +48,7 @@ public class ChainTopology {
     options.addOption(Utils.createOption(Constants.ARGS_SEND_INTERVAL, true, "Send interval of messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_DEBUG, false, "Print debug messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_PRINT_INTERVAL, true, "Print debug messages", false));
+    options.addOption(Utils.createOption(Constants.ARGS_MAX_PENDING, true, "Max pending", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -59,6 +60,11 @@ public class ChainTopology {
     String mode = cmd.getOptionValue(Constants.ARGS_MODE);
     int streamManagers = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_SREAM_MGRS));
     int interval = 1;
+    int maxPending = 1000;
+    if (cmd.hasOption(Constants.ARGS_MAX_PENDING)) {
+      maxPending = Integer.parseInt(Constants.ARGS_MAX_PENDING);
+    }
+
     if (cmd.hasOption(Constants.ARGS_PRINT_INTERVAL)) {
       interval = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_PRINT_INTERVAL));
     }
@@ -75,6 +81,7 @@ public class ChainTopology {
     conf.put(Constants.ARGS_PARALLEL, p);
     conf.put(Constants.ARGS_SPOUT_PARALLEL, spoutParallel);
     conf.put(Constants.ARGS_PRINT_INTERVAL, interval);
+    conf.put(Constants.ARGS_MAX_PENDING, maxPending);
 
 
     StreamTopologyBuilder streamTopologyBuilder;
