@@ -82,7 +82,7 @@ public class ChainTopology {
     conf.put(Constants.ARGS_SPOUT_PARALLEL, spoutParallel);
     conf.put(Constants.ARGS_PRINT_INTERVAL, interval);
     conf.put(Constants.ARGS_MAX_PENDING, maxPending);
-
+    conf.setMaxSpoutPending(maxPending);
 
     StreamTopologyBuilder streamTopologyBuilder;
     streamTopologyBuilder = new StreamTopologyBuilder();
