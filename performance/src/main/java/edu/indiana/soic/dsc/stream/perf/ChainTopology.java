@@ -130,7 +130,29 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
       buildThroughputTopologyAck(builder, p, conf, spoutParallel);
-    }  else if (mode.equals("tna")) {
+    } else if (mode.equals("la")) {
+      // we are not going to track individual messages, message loss is inherent in the decoder
+      // also we cannot replay message because of the decoder
+      // conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
+      // conf.put(com.twitter.heron.api.Config.TOPOLOGY_ENABLE_ACKING, true);
+      conf.setEnableAcking(true);
+      //cconf.setMaxSpoutPending(1000);
+
+      String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
+      String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
+      String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
+      String msgSizesValues = cmd.getOptionValue(Constants.ARGS_THRPUT_SIZES);
+      List<Integer> msgSizes = new ArrayList<>();
+      String []split = msgSizesValues.split(",");
+      for (String s : split) {
+        msgSizes.add(Integer.parseInt(s));
+      }
+      conf.put(Constants.ARGS_THRPUT_NO_MSGS, Integer.parseInt(noMessages));
+      conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
+      conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
+      conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
+      buildLatencyTopologyAck(builder, p, conf, spoutParallel);
+    } else if (mode.equals("tna")) {
       // we are not going to track individual messages, message loss is inherent in the decoder
       // also we cannot replay message because of the decoder
       // conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, 0);
@@ -287,6 +309,32 @@ public class ChainTopology {
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, stages).
         shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT,
             Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, 4L * 1024 * 1024 * 1024);
+  }
+
+  private static void buildLatencyTopologyAck(TopologyBuilder builder, int stages, Config conf, int parallel) {
+    ThroughputAckSpout spout = new ThroughputAckSpout();
+    ThroughputLastBolt lastBolt = new ThroughputLastBolt();
+    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout, parallel);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, 4L * 1024 * 1024 * 1024);
+
+    ThroughputPassthroughBolt previousBolt = new ThroughputPassthroughBolt();
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", previousBolt).
+        shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT, Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", 4L * 1024 * 1024 * 1024);
+
+    for (int i = 1; i < stages; i++) {
+      ThroughputPassthroughBolt bolt = new ThroughputPassthroughBolt();
+      builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + i, bolt, parallel).
+          shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + (i - 1),
+              Constants.Fields.CHAIN_STREAM);
+      conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + i, 4L * 1024 * 1024 * 1024);
+    }
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt).
+        shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + (stages - 1),
+            Constants.Fields.CHAIN_STREAM);
+
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, 4L * 1024 * 1024 * 1024);
   }
 
