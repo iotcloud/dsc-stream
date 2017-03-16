@@ -331,7 +331,7 @@ public class ChainTopology {
       conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + i, 4L * 1024 * 1024 * 1024);
     }
 
-    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt).
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, stages).
         shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_" + (stages - 1),
             Constants.Fields.CHAIN_STREAM);
 
