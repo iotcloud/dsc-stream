@@ -36,9 +36,10 @@ public class ThroughputLastBolt extends BaseRichBolt {
     noOfMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_MSGS);
     noOfEmptyMessages = (Integer) stormConf.get(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
     fileName = (String) stormConf.get(Constants.ARGS_THRPUT_FILENAME);
-    save = !((String)stormConf.get(Constants.ARGS_MODE)).equals("ta");
+    String mode = (String) stormConf.get(Constants.ARGS_MODE);
+    save = !mode.equals("ta") && !mode.equals("la");
     int parallel = (int) stormConf.get(Constants.ARGS_PARALLEL);
-    if (!((String)stormConf.get(Constants.ARGS_MODE)).equals("t")) {
+    if (!mode.equals("t")) {
       noOfMessages = noOfMessages / parallel;
       noOfEmptyMessages = noOfEmptyMessages / parallel;
     }
