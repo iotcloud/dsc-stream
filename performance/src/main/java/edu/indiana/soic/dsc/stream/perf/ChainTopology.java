@@ -320,7 +320,7 @@ public class ChainTopology {
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, 4L * 1024 * 1024 * 1024);
 
     ThroughputPassthroughBolt previousBolt = new ThroughputPassthroughBolt();
-    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", previousBolt).
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", previousBolt, parallel).
         shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT, Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH + "_0", 4L * 1024 * 1024 * 1024);
 
