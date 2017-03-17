@@ -58,8 +58,9 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
       list.add(time);
       list.add(System.nanoTime());
 
+      count++;
       if (debug && count % printInveral == 0) {
-        LOG.info("Messagre received count: " + count++);
+        LOG.info("Messagre received count: " + count);
         // Utils.printTime(id, size, time, previousTime);
       }
 
