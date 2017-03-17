@@ -7,16 +7,12 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.immutable.Stream;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class ThroughputAckSpout extends BaseRichSpout {
   private static Logger LOG = LoggerFactory.getLogger(ThroughputSpout.class);
@@ -45,6 +41,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private boolean fileWritten = false;
   private int spoutParallel = 1;
   private int parallel = 1;
+  private Map<String, Long> emitTimes = new HashMap<>();
+  private boolean latency = false;
+  private List<Long> times = new ArrayList<>();
 
   private enum SendingType {
     DATA,
@@ -68,6 +67,8 @@ public class ThroughputAckSpout extends BaseRichSpout {
     spoutParallel = (int) stormConf.get(Constants.ARGS_SPOUT_PARALLEL);
     parallel = (int) stormConf.get(Constants.ARGS_PARALLEL);
     maxOutstandingTuples = (int) stormConf.get(Constants.ARGS_MAX_PENDING);
+    String mode = (String) stormConf.get(Constants.ARGS_MODE);
+    latency = mode.equals("la");
   }
 
   @Override
@@ -123,9 +124,13 @@ public class ThroughputAckSpout extends BaseRichSpout {
       list.add(data);
       list.add(currentSendCount);
       list.add(size);
-      list.add(System.nanoTime());
-      list.add(System.nanoTime());
+      long e = System.nanoTime();
+      list.add(e);
+      list.add(e);
       String id = UUID.randomUUID().toString();
+      if (latency) {
+        emitTimes.put(id, e);
+      }
 //      String id = String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
@@ -145,6 +150,12 @@ public class ThroughputAckSpout extends BaseRichSpout {
     if ((debug && ackReceiveCount % printInveral == 0) || startFailing) {
       LOG.info("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
     }
+    if (latency) {
+      Long time = emitTimes.remove(o.toString());
+      if (time != null) {
+        times.add(System.nanoTime() - time);
+      }
+    }
     totalAckCount++;
     handleAck(false, 0);
   }
@@ -152,6 +163,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void fail(Object o) {
     LOG.info("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
+    if (latency) {
+      emitTimes.remove(o.toString());
+    }
     startFailing = true;
     totalFailCount++;
     handleAck(true, o);
@@ -176,8 +190,12 @@ public class ThroughputAckSpout extends BaseRichSpout {
         System.out.println("Write file for size: " + size + String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
         long time = System.currentTimeMillis() - firstThroughputSendTime;
         String currentOutPut =  spoutParallel + "x" + parallel + " " + size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
-        writeFile(currentOutPut);
+        writeFile(fileName + id, currentOutPut);
         fileWritten = true;
+        if (latency) {
+          writeListToFile(fileName + id + "_" + size, times);
+          times.clear();
+        }
       } else if (currentSendCount >= noOfMessages && ackReceiveCount >= noOfMessages) {
         int size = messageSizes.get(currentSendIndex);
         LOG.info("Finished message size: " + size);
@@ -200,8 +218,22 @@ public class ThroughputAckSpout extends BaseRichSpout {
         Constants.Fields.TIME_FIELD2));
   }
 
-  private void writeFile(String line) {
-    try(FileWriter fw = new FileWriter(fileName + id, true);
+  private void writeListToFile(String fileName, List<Long> list) {
+    try(FileWriter fw = new FileWriter(fileName, true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        PrintWriter out = new PrintWriter(bw)) {
+      for (Long l : list) {
+        out.println(l);
+      }
+    } catch (IOException e) {
+      //exception handling left as an exercise for the reader
+      LOG.error("Failed to write to the file", e);
+      e.printStackTrace();
+    }
+  }
+
+  private void writeFile(String fileName, String line) {
+    try(FileWriter fw = new FileWriter(fileName, true);
         BufferedWriter bw = new BufferedWriter(fw);
         PrintWriter out = new PrintWriter(bw)) {
       out.println(line);
