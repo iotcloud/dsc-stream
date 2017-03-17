@@ -20,6 +20,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
   private String id;
   private boolean debug;
   private int count;
+  private int printInveral;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -27,6 +28,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     messageSizes = (List<Integer>) map.get(Constants.ARGS_THRPUT_SIZES);
     this.id = topologyContext.getThisComponentId();
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
+    printInveral = (int) stormConf.get(Constants.ARGS_PRINT_INTERVAL);
   }
 
   @Override
@@ -56,7 +58,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
       list.add(time);
       list.add(System.nanoTime());
 
-      if (debug) {
+      if (debug && count % printInveral == 0) {
         LOG.info("Messagre received count: " + count++);
         // Utils.printTime(id, size, time, previousTime);
       }
