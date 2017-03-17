@@ -28,7 +28,7 @@ public class ThroughputPassthroughBolt extends BaseRichBolt {
     messageSizes = (List<Integer>) map.get(Constants.ARGS_THRPUT_SIZES);
     this.id = topologyContext.getThisComponentId();
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
-    printInveral = (int) stormConf.get(Constants.ARGS_PRINT_INTERVAL);
+    printInveral = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
   }
 
   @Override
