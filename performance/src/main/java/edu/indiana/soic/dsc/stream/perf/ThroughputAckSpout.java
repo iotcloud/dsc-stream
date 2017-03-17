@@ -44,6 +44,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private Map<String, Long> emitTimes = new HashMap<>();
   private boolean latency = false;
   private List<Long> times = new ArrayList<>();
+  private int streamManagers = 0;
 
   private enum SendingType {
     DATA,
@@ -67,6 +68,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     spoutParallel = (int) stormConf.get(Constants.ARGS_SPOUT_PARALLEL);
     parallel = (int) stormConf.get(Constants.ARGS_PARALLEL);
     maxOutstandingTuples = (int) stormConf.get(Constants.ARGS_MAX_PENDING);
+    streamManagers = (int) stormConf.get(Constants.ARGS_SREAM_MGRS);
     String mode = (String) stormConf.get(Constants.ARGS_MODE);
     latency = mode.equals("la");
   }
@@ -188,14 +190,17 @@ public class ThroughputAckSpout extends BaseRichSpout {
       if (currentSendCount >= noOfMessages - noOfEmptyMessages && ackReceiveCount >= noOfMessages - noOfEmptyMessages && !fileWritten) {
         int size = messageSizes.get(currentSendIndex);
         System.out.println("Write file for size: " + size + String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
-        long time = System.currentTimeMillis() - firstThroughputSendTime;
-        String currentOutPut =  spoutParallel + "x" + parallel + " " + size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
-        writeFile(fileName + id, currentOutPut);
-        fileWritten = true;
         if (latency) {
-          writeListToFile(fileName + id + "_" + size, times);
+          String average = calculateStats();
+          String currentOutPut = streamManagers + "x" + spoutParallel + "x" + parallel + " " + size + " " + average;
+          writeFile(fileName + id, currentOutPut);
           times.clear();
+        } else {
+          long time = System.currentTimeMillis() - firstThroughputSendTime;
+          String currentOutPut =  streamManagers + "x" + spoutParallel + "x" + parallel + " " + size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
+          writeFile(fileName + id, currentOutPut);
         }
+        fileWritten = true;
       } else if (currentSendCount >= noOfMessages && ackReceiveCount >= noOfMessages) {
         int size = messageSizes.get(currentSendIndex);
         LOG.info("Finished message size: " + size);
@@ -206,6 +211,23 @@ public class ThroughputAckSpout extends BaseRichSpout {
         fileWritten = false;
       }
     }
+  }
+
+  private String calculateStats() {
+    double ave = 0;
+    for (int i = 0; i < times.size(); i++) {
+      ave += (times.get(i) + 0.0) / 1000000;
+    }
+    ave = ave / times.size();
+
+    double standardDev = 0;
+    for (int i = 0; i < times.size(); i++) {
+      double v = (times.get(i) + 0.0) - ave;
+      standardDev += v * v;
+    }
+    standardDev = standardDev / times.size();
+    standardDev = Math.sqrt(standardDev);
+    return ave + " " + standardDev;
   }
 
   @Override
