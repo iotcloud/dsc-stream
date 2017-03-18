@@ -222,7 +222,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
     double standardDev = 0;
     for (int i = 0; i < times.size(); i++) {
-      double v = (times.get(i) + 0.0) - ave;
+      double v = (times.get(i) + 0.0) / 1000000 - ave;
       standardDev += v * v;
     }
     standardDev = standardDev / times.size();
