@@ -150,7 +150,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void ack(Object o) {
     if ((debug && ackReceiveCount % printInveral == 0) || startFailing) {
-      LOG.info("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
+      LOG.info("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString() + " outstanding: " + outstandingTuples);
     }
     if (latency) {
       Long time = emitTimes.remove(o.toString());
@@ -164,7 +164,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
-    LOG.info("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString());
+    LOG.info("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString() + " outstanding: " + outstandingTuples);
     if (latency) {
       emitTimes.remove(o.toString());
     }
