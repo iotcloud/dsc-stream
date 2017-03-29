@@ -195,6 +195,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
           String average = calculateStats();
           String currentOutPut = streamManagers + "x" + spoutParallel + "x" + parallel + " " + noOfMessages + " " + size + " " + time + " " + average;
           writeFile(fileName + id, currentOutPut);
+          writeListToFile(fileName + id + "_" + streamManagers + "x" + spoutParallel + "x" + parallel + "_" + noOfMessages + "_" + size, times);
           times.clear();
         } else {
           String currentOutPut =  streamManagers + "x" + spoutParallel + "x" + parallel + " " + (noOfMessages - noOfEmptyMessages) + " " + size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
