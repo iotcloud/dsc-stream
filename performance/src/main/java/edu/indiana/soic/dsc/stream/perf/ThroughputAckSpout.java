@@ -76,7 +76,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     try {
-      if (System.currentTimeMillis() - start < 10000 ) {
+      if (System.currentTimeMillis() - start < 30000 ) {
         return;
       }
 
