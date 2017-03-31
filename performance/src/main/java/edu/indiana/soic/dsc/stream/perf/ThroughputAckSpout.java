@@ -72,7 +72,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
     maxOutstandingTuples = (int) stormConf.get(Constants.ARGS_MAX_PENDING);
     streamManagers = (int) stormConf.get(Constants.ARGS_SREAM_MGRS);
     String mode = (String) stormConf.get(Constants.ARGS_MODE);
-    int messagesPerSecond = (Integer) stormConf.get("message.rate");
+    int messagesPerSecond = (Integer) stormConf.get(Constants.ARGS_RATE);
     latency = mode.equals("la");
     if (messagesPerSecond > 0) {
       sendGap = 1000000000 / messagesPerSecond;
