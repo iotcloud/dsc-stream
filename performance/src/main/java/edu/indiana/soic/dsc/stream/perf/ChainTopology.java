@@ -49,6 +49,7 @@ public class ChainTopology {
     options.addOption(Utils.createOption(Constants.ARGS_DEBUG, false, "Print debug messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_PRINT_INTERVAL, true, "Print debug messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_MAX_PENDING, true, "Max pending", false));
+    options.addOption(Utils.createOption(Constants.ARGS_RATE, true, "Max pending", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -74,6 +75,11 @@ public class ChainTopology {
       spoutParallel = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_SPOUT_PARALLEL));
     }
 
+    int rate = 0;
+    if (cmd.hasOption(Constants.ARGS_RATE)) {
+      rate = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_RATE));
+    }
+
     Config conf = new Config();
     conf.setDebug(false);
     conf.put(Constants.ARGS_DEBUG, debug);
@@ -82,6 +88,7 @@ public class ChainTopology {
     conf.put(Constants.ARGS_SPOUT_PARALLEL, spoutParallel);
     conf.put(Constants.ARGS_PRINT_INTERVAL, interval);
     conf.put(Constants.ARGS_MAX_PENDING, maxPending);
+    conf.put(Constants.ARGS_RATE, rate);
     conf.put(Constants.ARGS_SREAM_MGRS, streamManagers);
     conf.setMaxSpoutPending(maxPending);
 

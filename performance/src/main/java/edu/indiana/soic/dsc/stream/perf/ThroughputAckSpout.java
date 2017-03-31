@@ -45,6 +45,8 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private boolean latency = false;
   private List<Long> times = new ArrayList<>();
   private int streamManagers = 0;
+  private long sendGap = 0;
+  private long getLastSendTime = 0;
 
   private enum SendingType {
     DATA,
@@ -70,7 +72,12 @@ public class ThroughputAckSpout extends BaseRichSpout {
     maxOutstandingTuples = (int) stormConf.get(Constants.ARGS_MAX_PENDING);
     streamManagers = (int) stormConf.get(Constants.ARGS_SREAM_MGRS);
     String mode = (String) stormConf.get(Constants.ARGS_MODE);
+    int messagesPerSecond = (Integer) stormConf.get("message.rate");
     latency = mode.equals("la");
+    if (messagesPerSecond > 0) {
+      sendGap = 1000000000 / messagesPerSecond;
+    }
+    lastSendTime = System.nanoTime();
   }
 
   @Override
@@ -99,6 +106,12 @@ public class ThroughputAckSpout extends BaseRichSpout {
       if (sendState == SendingType.EMPTY && currentSendCount >= noOfEmptyMessages) {
         return;
       }
+
+      long now = System.nanoTime();
+      if (sendGap != 0 && sendGap > now - lastSendTime) {
+        return;
+      }
+      lastSendTime = now;
 
 //      if (System.currentTimeMillis() - lastSendTime < 2) {
 //        return;
