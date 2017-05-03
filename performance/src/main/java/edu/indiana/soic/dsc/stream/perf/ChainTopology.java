@@ -159,7 +159,7 @@ public class ChainTopology {
       conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
       conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
       conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
-      buildThroughputTopologyAck(builder, p, conf, spoutParallel);
+      buildLatencyShortTopologyAck(builder, p, conf, spoutParallel);
     }  else if (mode.equals("la")) {
       // we are not going to track individual messages, message loss is inherent in the decoder
       // also we cannot replay message because of the decoder
