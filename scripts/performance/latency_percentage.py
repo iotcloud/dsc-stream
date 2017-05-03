@@ -1,8 +1,12 @@
 
 bins=100
-results_file="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/march15/verbs/bench/latency_4_10000000_100000"
-results_file="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/march15/ipib/bench/latency_2_2_10000000_100000"
-#results_file="/home/supun/dev/projects/stream/dsc-stream2/scripts/performance/march15/tcp/bench/latency_4_2_10000000_100000"
+results_file_verbs="/home/supun/data/juliet/verbs/benchmark_100/latency_7_1000000_100000"
+results_file_ipib="/home/supun/data/juliet/ipib/benchmark_100/latency_7_1000000_100000"
+results_file_tcp="/home/supun/data/juliet/tcp/benchmark_100/latency_7_1000000_100000"
+#
+results_file_verbs="/home/supun/data/juliet/verbs/benchmark/latency_7_1000000_100000"
+results_file_ipib="/home/supun/data/juliet/ipib/benchmark/latency_7_1000000_100000"
+results_file_tcp="/home/supun/data/juliet/tcp/benchmark/latency_7_1000000_100000"
 
 def calculate_bins(file_name, upperbound):
     count = 0
@@ -16,17 +20,18 @@ def calculate_bins(file_name, upperbound):
             if line: # make sure there is something there
                 n = line.split(',')
                 number_on_line = long(n[0].strip())
-                if (number_on_line > 500000):
-                    numbers.append(number_on_line)
-        numbers = numbers[0:len(numbers) - upperbound * 2]
-        numbers.sort()
+                # if (number_on_line > 250000):
+                numbers.append(number_on_line)
+        numbers = numbers[0:len(numbers) - upperbound / 2]
+        # for n in numbers:
+        #     print n
 
-        for n in numbers:
-            print n
+        numbers.sort()
 
         size = len(numbers)
         bucket_size = size / bins
         final_numbers = []
+        avg_of_numbers = (sum(numbers) + 0.0)/size
         print "size " + str(size) + " bucket size: " + str(bucket_size)
         for i in range(0, bins):
             index = i * bucket_size
@@ -36,9 +41,12 @@ def calculate_bins(file_name, upperbound):
             final_numbers.append(index___)
         final_numbers.append((numbers[size - 1] + 0.0) / 1000000)
         print final_numbers
+        print (avg_of_numbers + 0.0) / 1000000
 
 def main():
-    calculate_bins(results_file, 500000)
+    calculate_bins(results_file_verbs, 50000)
+    calculate_bins(results_file_ipib, 50000)
+    calculate_bins(results_file_tcp, 50000)
 
 def calc(folder, data, tasks):
     for d in data:

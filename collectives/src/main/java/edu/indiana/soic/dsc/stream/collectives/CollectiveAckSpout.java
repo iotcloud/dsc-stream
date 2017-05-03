@@ -1,10 +1,13 @@
-package edu.indiana.soic.dsc.stream.perf;
+package edu.indiana.soic.dsc.stream.collectives;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichSpout;
-import backtype.storm.tuple.Fields;
+import com.twitter.heron.api.spout.BaseRichSpout;
+import com.twitter.heron.api.spout.SpoutOutputCollector;
+import com.twitter.heron.api.topology.OutputFieldsDeclarer;
+import com.twitter.heron.api.topology.TopologyContext;
+import com.twitter.heron.api.tuple.Fields;
+import edu.indiana.soic.dsc.stream.perf.Constants;
+import edu.indiana.soic.dsc.stream.perf.ThroughputSpout;
+import edu.indiana.soic.dsc.stream.perf.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,8 +17,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
-public class ThroughputAckSpout extends BaseRichSpout {
-  private static Logger LOG = LoggerFactory.getLogger(ThroughputSpout.class);
+public class CollectiveAckSpout extends BaseRichSpout {
+  private static Logger LOG = LoggerFactory.getLogger(CollectiveAckSpout.class);
 
   private long noOfMessages = 0;
   private long noOfEmptyMessages = 1000;
@@ -47,6 +50,7 @@ public class ThroughputAckSpout extends BaseRichSpout {
   private int streamManagers = 0;
   private long sendGap = 0;
   private long getLastSendTime = 0;
+  private TopologyContext context;
 
   private enum SendingType {
     DATA,
@@ -73,17 +77,18 @@ public class ThroughputAckSpout extends BaseRichSpout {
     streamManagers = (int) stormConf.get(Constants.ARGS_SREAM_MGRS);
     String mode = (String) stormConf.get(Constants.ARGS_MODE);
     int messagesPerSecond = (Integer) stormConf.get(Constants.ARGS_RATE);
-    latency = mode.equals("la") || mode.equals("lsa");
+    latency = mode.equals("la");
     if (messagesPerSecond > 0) {
       sendGap = 1000000000 / messagesPerSecond;
     }
     lastSendTime = System.nanoTime();
+    context = topologyContext;
   }
 
   @Override
   public void nextTuple() {
     try {
-      if (System.currentTimeMillis() - start < 30000 ) {
+      if (System.currentTimeMillis() - start < 3000 ) {
         return;
       }
 
@@ -142,11 +147,11 @@ public class ThroughputAckSpout extends BaseRichSpout {
       long e = System.nanoTime();
       list.add(e);
       list.add(e);
-      String id = UUID.randomUUID().toString();
+//      String id = UUID.randomUUID().toString();
       if (latency) {
         emitTimes.put(id, e);
       }
-//      String id = String.valueOf(totalSendCount);
+      String id = String.valueOf(totalSendCount) + "_" + context.getThisTaskId();
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
         if (totalSendCount % printInveral == 0) {
@@ -163,7 +168,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
   @Override
   public void ack(Object o) {
     if ((debug && ackReceiveCount % printInveral == 0) || startFailing) {
-      LOG.info("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString() + " outstanding: " + outstandingTuples);
+      LOG.info("Acked tuple: " + o.toString() + " total acked: " + totalAckCount + " send: "
+          + totalSendCount + " faile: " + totalFailCount + " "
+          + o.toString() + " outstanding: " + outstandingTuples);
     }
     if (latency) {
       Long time = emitTimes.remove(o.toString());
@@ -177,7 +184,9 @@ public class ThroughputAckSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object o) {
-    LOG.info("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: " + totalSendCount + " faile: " + totalFailCount + " " + o.toString() + " outstanding: " + outstandingTuples);
+    LOG.info("Failed to process tuple: " + o.toString() + " total acked: " + totalAckCount + " send: "
+        + totalSendCount + " faile: " + totalFailCount + " "
+        + o.toString() + " outstanding: " + outstandingTuples);
     if (latency) {
       emitTimes.remove(o.toString());
     }
@@ -200,18 +209,25 @@ public class ThroughputAckSpout extends BaseRichSpout {
         sendState = SendingType.DATA;
       }
     } else if (sendState == SendingType.DATA) {
-      if (currentSendCount >= noOfMessages - noOfEmptyMessages && ackReceiveCount >= noOfMessages - noOfEmptyMessages && !fileWritten) {
+      if (currentSendCount >= noOfMessages - noOfEmptyMessages && ackReceiveCount
+          >= noOfMessages - noOfEmptyMessages && !fileWritten) {
         int size = messageSizes.get(currentSendIndex);
-        System.out.println("Write file for size: " + size + String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
+        System.out.println("Write file for size: " + size +
+            String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
         long time = System.currentTimeMillis() - firstThroughputSendTime;
         if (latency) {
           String average = calculateStats();
-          String currentOutPut = streamManagers + "x" + spoutParallel + "x" + parallel + " " + noOfMessages + " " + size + " " + time + " " + average;
+          String currentOutPut = streamManagers + "x" + spoutParallel + "x" + parallel + " " +
+              noOfMessages + " " + size + " " + time + " " + average;
           writeFile(fileName + id, currentOutPut);
-          writeListToFile(fileName + id + "_" + streamManagers + "x" + spoutParallel + "x" + parallel + "_" + noOfMessages + "_" + size, times);
+          writeListToFile(fileName + id + "_" + streamManagers + "x" + spoutParallel + "x" +
+              parallel + "_" + noOfMessages + "_" + size, times);
           times.clear();
         } else {
-          String currentOutPut =  streamManagers + "x" + spoutParallel + "x" + parallel + " " + (noOfMessages - noOfEmptyMessages) + " " + size + " " + (noOfMessages - noOfEmptyMessages) + " " + time + " " + (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
+          String currentOutPut =  streamManagers + "x" + spoutParallel + "x" + parallel + " " +
+              (noOfMessages - noOfEmptyMessages) + " " + size + " " +
+              (noOfMessages - noOfEmptyMessages) + " " + time + " " +
+              (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
           writeFile(fileName + id, currentOutPut);
         }
         fileWritten = true;
@@ -280,4 +296,3 @@ public class ThroughputAckSpout extends BaseRichSpout {
     }
   }
 }
-
