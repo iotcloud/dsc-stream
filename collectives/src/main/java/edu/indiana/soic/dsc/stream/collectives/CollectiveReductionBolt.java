@@ -47,7 +47,7 @@ public class CollectiveReductionBolt extends BaseRichBolt {
     for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
       if (e.getValue().size() <= 0) {
         allIn = false;
-        LOG.log(Level.INFO, String.format("%d Size %d %d", context.getThisTaskId(), e.getKey(), e.getValue().size()));
+        // LOG.log(Level.INFO, String.format("%d Size %d %d", context.getThisTaskId(), e.getKey(), e.getValue().size()));
       }
     }
 
