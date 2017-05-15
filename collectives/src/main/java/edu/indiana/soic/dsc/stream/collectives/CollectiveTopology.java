@@ -77,24 +77,29 @@ public class CollectiveTopology {
     conf.put(Constants.ARGS_MAX_PENDING, maxPending);
     conf.put(Constants.ARGS_RATE, rate);
     conf.put(Constants.ARGS_SREAM_MGRS, streamManagers);
+
+    String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
+    String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
+    String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
+    String msgSizesValues = cmd.getOptionValue(Constants.ARGS_THRPUT_SIZES);
+    List<Integer> msgSizes = new ArrayList<>();
+    String []split = msgSizesValues.split(",");
+    for (String s : split) {
+      msgSizes.add(Integer.parseInt(s));
+    }
+    conf.put(Constants.ARGS_THRPUT_NO_MSGS, Integer.parseInt(noMessages));
+    conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
+    conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
+    conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
+
     conf.setMaxSpoutPending(maxPending);
 
     conf.setEnableAcking(true);
     if (mode.equals("c")) {
-      String throughputFile = cmd.getOptionValue(Constants.ARGS_THRPUT_FILENAME);
-      String noEmptyMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_EMPTY_MSGS);
-      String noMessages = cmd.getOptionValue(Constants.ARGS_THRPUT_NO_MSGS);
-      String msgSizesValues = cmd.getOptionValue(Constants.ARGS_THRPUT_SIZES);
-      List<Integer> msgSizes = new ArrayList<>();
-      String []split = msgSizesValues.split(",");
-      for (String s : split) {
-        msgSizes.add(Integer.parseInt(s));
-      }
-      conf.put(Constants.ARGS_THRPUT_NO_MSGS, Integer.parseInt(noMessages));
-      conf.put(Constants.ARGS_THRPUT_NO_EMPTY_MSGS, Integer.parseInt(noEmptyMessages));
-      conf.put(Constants.ARGS_THRPUT_FILENAME, throughputFile);
-      conf.put(Constants.ARGS_THRPUT_SIZES, msgSizes);
+
       buildThroughputTopologyAck(builder, p, conf, spoutParallel);
+    } else if (mode.equals("r")) {
+      buildThroughputTopologyReductionAck(builder, p, conf, spoutParallel);
     }
 
     // put the no of parallel tasks as a config property
@@ -132,10 +137,31 @@ public class CollectiveTopology {
         (Constants.ThroughputTopology.THROUGHPUT_SPOUT,
             Constants.Fields.CHAIN_STREAM);
 
-    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, stages).reduceGrouping
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).reduceGrouping
       (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
             Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
+//    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, stages).shuffleGrouping
+//        (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
+//              Constants.Fields.CHAIN_STREAM);
 
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromGigabytes(4));
+  }
+
+  private static void buildThroughputTopologyReductionAck(TopologyBuilder builder, int stages, Config conf, int spoutParallel) {
+    CollectiveAckSpout spout = new CollectiveAckSpout();
+    CollectiveReductionBolt lastBolt = new CollectiveReductionBolt();
+    CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
+
+    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout, spoutParallel);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromGigabytes(4));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).shuffleGrouping
+        (Constants.ThroughputTopology.THROUGHPUT_SPOUT,
+            Constants.Fields.CHAIN_STREAM);
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).shuffleGrouping
+        (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
+              Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromGigabytes(4));
   }
 }

@@ -151,7 +151,7 @@ public class CollectiveAckSpout extends BaseRichSpout {
       if (latency) {
         emitTimes.put(id, e);
       }
-      String id = String.valueOf(totalSendCount) + "_" + context.getThisTaskId();
+      String id = context.getThisTaskId() + "_" + String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
         if (totalSendCount % printInveral == 0) {

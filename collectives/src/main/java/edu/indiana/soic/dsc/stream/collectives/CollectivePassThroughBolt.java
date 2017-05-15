@@ -22,6 +22,7 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
   private boolean debug;
   private int count;
   private int printInveral;
+  private TopologyContext context;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -30,6 +31,7 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
     this.id = topologyContext.getThisComponentId();
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
     printInveral = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
+    context = topologyContext;
   }
 
   @Override
@@ -61,7 +63,7 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
 
       count++;
       if (debug && count % printInveral == 0) {
-        LOG.info("Messagre received count: " + count);
+        LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count);
         // Utils.printTime(id, size, time, previousTime);
       }
 

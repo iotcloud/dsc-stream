@@ -29,6 +29,7 @@ public class CollectiveLastBolt extends BaseRichBolt {
   private int messageCount = 0;
   private boolean debug = false;
   private int printInveral = 0;
+  private TopologyContext context;
 
   private enum ReceiveType {
     DATA,
@@ -51,6 +52,7 @@ public class CollectiveLastBolt extends BaseRichBolt {
     this.printInveral = (int) stormConf.get(Constants.ARGS_PRINT_INTERVAL);
 
     this.outputCollector = outputCollector;
+    this.context = topologyContext;
   }
 
   @Override
@@ -71,13 +73,9 @@ public class CollectiveLastBolt extends BaseRichBolt {
       String stream = tuple.getSourceStreamId();
       outputCollector.ack(tuple);
 
-      if (stream.equals(Constants.Fields.CONTROL_STREAM)) {
-        return;
-      }
-
       Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
       if (debug && messageCount % printInveral == 0) {
-        LOG.info("Last Received tuple: " + count);
+        LOG.info(context.getThisTaskId() + " Last Received tuple: " + count);
       }
       count++;
       // Integer messageCount = tuple.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
