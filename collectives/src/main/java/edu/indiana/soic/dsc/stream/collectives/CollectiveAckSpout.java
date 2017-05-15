@@ -77,7 +77,7 @@ public class CollectiveAckSpout extends BaseRichSpout {
     streamManagers = (int) stormConf.get(Constants.ARGS_SREAM_MGRS);
     String mode = (String) stormConf.get(Constants.ARGS_MODE);
     int messagesPerSecond = (Integer) stormConf.get(Constants.ARGS_RATE);
-    latency = mode.equals("la");
+    latency = true;
     if (messagesPerSecond > 0) {
       sendGap = 1000000000 / messagesPerSecond;
     }
@@ -148,10 +148,10 @@ public class CollectiveAckSpout extends BaseRichSpout {
       list.add(e);
       list.add(e);
 //      String id = UUID.randomUUID().toString();
+      String id = context.getThisTaskId() + "_" + String.valueOf(totalSendCount);
       if (latency) {
         emitTimes.put(id, e);
       }
-      String id = context.getThisTaskId() + "_" + String.valueOf(totalSendCount);
       collector.emit(Constants.Fields.CHAIN_STREAM, list, id);
       if (debug) {
         if (totalSendCount % printInveral == 0) {
@@ -215,21 +215,13 @@ public class CollectiveAckSpout extends BaseRichSpout {
         System.out.println("Write file for size: " + size +
             String.format("sendCount: %d ackReceive: %d", currentSendCount, ackReceiveCount));
         long time = System.currentTimeMillis() - firstThroughputSendTime;
-        if (latency) {
-          String average = calculateStats();
-          String currentOutPut = streamManagers + "x" + spoutParallel + "x" + parallel + " " +
-              noOfMessages + " " + size + " " + time + " " + average;
-          writeFile(fileName + id, currentOutPut);
-          writeListToFile(fileName + id + "_" + streamManagers + "x" + spoutParallel + "x" +
-              parallel + "_" + noOfMessages + "_" + size, times);
-          times.clear();
-        } else {
-          String currentOutPut =  streamManagers + "x" + spoutParallel + "x" + parallel + " " +
-              (noOfMessages - noOfEmptyMessages) + " " + size + " " +
-              (noOfMessages - noOfEmptyMessages) + " " + time + " " +
-              (noOfMessages - noOfEmptyMessages + 0.0) / (time / 1000.0);
-          writeFile(fileName + id, currentOutPut);
-        }
+        String average = calculateStats();
+        String currentOutPut = streamManagers + "x" + spoutParallel + "x" + parallel + " " +
+            noOfMessages + " " + size + " " + time + " " + average;
+        writeFile(fileName + id, currentOutPut);
+        writeListToFile(fileName + id + "_" + streamManagers + "x" + spoutParallel + "x" +
+            parallel + "_" + noOfMessages + "_" + size, times);
+        times.clear();
         fileWritten = true;
       } else if (currentSendCount >= noOfMessages && ackReceiveCount >= noOfMessages) {
         int size = messageSizes.get(currentSendIndex);
