@@ -24,6 +24,7 @@ public class CountReduceFunction implements IReduce {
   private Map<Integer, Integer> counts = new HashMap<>();
 
   private boolean debug = false;
+  private int printInveral = 0;
 
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext, List<Integer> list,
@@ -31,6 +32,7 @@ public class CountReduceFunction implements IReduce {
     this.collector = iOutputCollector;
     this.context = topologyContext;
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
+    this.printInveral = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
     for (int i : list) {
       incoming.put(i, new LinkedList<Tuple>());
       counts.put(i, 0);
@@ -40,7 +42,7 @@ public class CountReduceFunction implements IReduce {
 
   @Override
   public void execute(int i, Tuple tuple) {
-    if (debug) {
+    if (debug && count % printInveral == 0) {
       LOG.info(String.format("%d Reduction Received message from %d %d", context.getThisTaskId(), i, count));
     }
     count++;
