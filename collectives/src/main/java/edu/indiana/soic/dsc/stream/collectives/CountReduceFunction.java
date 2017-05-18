@@ -83,7 +83,7 @@ public class CountReduceFunction implements IReduce {
       }
     }
 
-    if (debug) {
+    if (debug && count % printInveral == 0) {
       for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
 
         LOG.log(Level.INFO, String.format("%d Incoming %d, %d total: %d",
