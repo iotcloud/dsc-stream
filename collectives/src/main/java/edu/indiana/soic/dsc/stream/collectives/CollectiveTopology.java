@@ -131,7 +131,7 @@ public class CollectiveTopology {
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
 
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout, spoutParallel);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(256));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromGigabytes(4));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).shuffleGrouping
         (Constants.ThroughputTopology.THROUGHPUT_SPOUT,
@@ -144,7 +144,7 @@ public class CollectiveTopology {
 //        (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
 //              Constants.Fields.CHAIN_STREAM);
 
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromGigabytes(4));
   }
 
   private static void buildThroughputTopologyReductionAck(TopologyBuilder builder, int stages, Config conf, int spoutParallel) {
@@ -153,7 +153,7 @@ public class CollectiveTopology {
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
 
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, spout, spoutParallel);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(256));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromGigabytes(4));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).shuffleGrouping
         (Constants.ThroughputTopology.THROUGHPUT_SPOUT,
@@ -162,6 +162,6 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).shuffleGrouping
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
               Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromGigabytes(4));
   }
 }
