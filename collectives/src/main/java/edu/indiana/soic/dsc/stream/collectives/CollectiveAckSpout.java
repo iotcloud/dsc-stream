@@ -88,7 +88,7 @@ public class CollectiveAckSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     try {
-      if (System.currentTimeMillis() - start < 3000 ) {
+      if (System.currentTimeMillis() - start < 15000 ) {
         return;
       }
 
@@ -147,8 +147,8 @@ public class CollectiveAckSpout extends BaseRichSpout {
       long e = System.nanoTime();
       list.add(e);
       list.add(e);
-//      String id = UUID.randomUUID().toString();
-      String id = context.getThisTaskId() + "_" + String.valueOf(totalSendCount);
+      String id = UUID.randomUUID().toString();
+//      String id = context.getThisTaskId() + "_" + String.valueOf(totalSendCount);
       if (latency) {
         emitTimes.put(id, e);
       }
