@@ -112,7 +112,8 @@ public class CollectiveTopology {
       conf.setEnableAcking(false);
       buildLatencyReduceTopology(builder, p, conf, url);
     } else if (mode.equals("ra")) {
-
+      conf.setEnableAcking(false);
+      buildLatencyTopology(builder, p, conf, url);
     }
 
     // put the no of parallel tasks as a config property
@@ -173,6 +174,44 @@ public class CollectiveTopology {
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
               Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
+  }
+
+  private static void buildLatencyTopology(TopologyBuilder builder, int stages, Config conf, String url) {
+    ErrorReporter reporter = new ErrorReporter() {
+      @Override
+      public void reportError(Throwable throwable) {
+        throwable.printStackTrace();
+        LOG.error("error occured", throwable);
+      }
+    };
+    IRichSpout dataSpout;
+    IRichBolt valueSendBolt;
+
+    dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
+    valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
+    OriginBolt originBolt = new OriginBolt();
+
+    CollectiveLastBolt lastBolt = new CollectiveLastBolt();
+    CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
+
+    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(256));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, originBolt, 1).
+        shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT);
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).allGrouping
+        (Constants.ThroughputTopology.THROUGHPUT_ORIGIN,
+            Constants.Fields.CHAIN_STREAM);
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).shuffleGrouping
+        (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
+            Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(
+        Constants.ThroughputTopology.THROUGHPUT_LAST, Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(256));
   }
 
   private static void buildLatencyReduceTopology(TopologyBuilder builder, int stages, Config conf, String url) {
