@@ -9,7 +9,6 @@ import com.twitter.heron.api.tuple.Tuple;
 import edu.indiana.soic.dsc.stream.perf.Constants;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class CollectiveReductionBolt extends BaseRichBolt {

@@ -1,0 +1,36 @@
+zk.servers: ["j-080:2181"]
+zk.root: "/iot/sensors"
+spouts:
+    receive_spout:
+        broker: "rabbitmq"
+        sensor: "data_sensor"
+        channel: "laseScanSender"
+        stream: "data"
+        fields: ["body", "sensorID", "time"]
+        properties:
+          ackMode: "auto"
+    control_spout:
+        broker: "rabbitmq"
+        sensor: "data_sensor"
+        channel: "controlSender"
+        stream: "control"
+        fields: ["body", "sensorID", "time"]
+        properties:
+          ackMode: "auto"
+bolts:
+    map_send_bolt:
+        broker: "rabbitmq"
+        sensor: "data_sensor"
+        channel: "mapReceiver"
+        fields: ["body", "sensorID", "time"]
+        properties:
+          ackMode: "auto"
+    best_send_bolt:
+        broker: "rabbitmq"
+        sensor: "data_sensor"
+        channel: "bestParticleReceiver"
+        fields: ["body", "sensorID", "time"]
+        properties:
+          ackMode: "auto"
+conf:
+    rabbitmq_url: "amqp://j-080:5672"
