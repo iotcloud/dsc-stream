@@ -1,22 +1,22 @@
 package edu.indiana.soic.dsc.stream.collectives.rabbit;
 
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
-import cgl.sensorstream.core.rabbitmq.DefaultRabbitMQMessageBuilder;
 import com.ss.commons.DestinationChanger;
 import com.ss.commons.MessageBuilder;
 import com.ss.commons.SpoutConfigurator;
-import edu.indiana.soic.dsc.stream.perf.ChainTopology;
-import edu.indiana.soic.dsc.stream.perf.Constants;
+import com.twitter.heron.api.topology.OutputFieldsDeclarer;
+import com.twitter.heron.api.tuple.Fields;
+import edu.indiana.soic.dsc.stream.collectives.Constants;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class RabbitMQStaticSpoutConfigurator implements SpoutConfigurator {
   int spout;
+  String url;
 
-  public RabbitMQStaticSpoutConfigurator(int spout) {
+  public RabbitMQStaticSpoutConfigurator(int spout, String url) {
     this.spout = spout;
+    this.url = url;
   }
 
   @Override
@@ -48,7 +48,7 @@ public class RabbitMQStaticSpoutConfigurator implements SpoutConfigurator {
 
   @Override
   public DestinationChanger getDestinationChanger() {
-    return new StaticDestinations(spout);
+    return new StaticDestinations(spout, url);
   }
 
   @Override

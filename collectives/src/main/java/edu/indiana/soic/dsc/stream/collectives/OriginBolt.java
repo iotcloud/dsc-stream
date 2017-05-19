@@ -1,14 +1,12 @@
 package edu.indiana.soic.dsc.stream.collectives;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
 import com.esotericsoftware.kryo.Kryo;
-import edu.indiana.soic.dsc.stream.perf.Constants;
-import edu.indiana.soic.dsc.stream.perf.Utils;
+import com.twitter.heron.api.bolt.BaseRichBolt;
+import com.twitter.heron.api.bolt.OutputCollector;
+import com.twitter.heron.api.topology.OutputFieldsDeclarer;
+import com.twitter.heron.api.topology.TopologyContext;
+import com.twitter.heron.api.tuple.Fields;
+import com.twitter.heron.api.tuple.Tuple;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -25,6 +23,7 @@ public class OriginBolt extends BaseRichBolt {
   private Kryo kryo;
   private boolean debug;
   private Map<Integer, byte[]> dataCache = new HashMap<>();
+  private int index = 0;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -39,8 +38,8 @@ public class OriginBolt extends BaseRichBolt {
   public void execute(Tuple tuple) {
     Object body = tuple.getValueByField(Constants.Fields.BODY);
     Object time = tuple.getValueByField(Constants.Fields.TIME_FIELD);
-    Object sensorId = tuple.getValueByField(Constants.Fields.SENSOR_ID_FIELD);
-    byte []b = null;
+    Long t = Long.valueOf(time.toString());
+    byte []b;
 
     List<Object> list = new ArrayList<Object>();
     // first bolt but not last
@@ -48,14 +47,17 @@ public class OriginBolt extends BaseRichBolt {
     int dataSize = wrapped.getInt(); // 1
     if (dataCache.containsKey(dataSize)) {
       b = dataCache.get(dataSize);
+      index++;
     } else {
       b = Utils.generateData(dataSize);
       dataCache.put(dataSize, b);
+      index = 0;
     }
     list.add(b);
-
-    list.add(sensorId);
-    list.add(time);
+    list.add(index);
+    list.add(dataSize);
+    list.add(t);
+    list.add(t);
     collector.emit(Constants.Fields.CHAIN_STREAM, list);
   }
 
@@ -63,7 +65,9 @@ public class OriginBolt extends BaseRichBolt {
   public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
     outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
         Constants.Fields.BODY,
-        Constants.Fields.SENSOR_ID_FIELD,
-        Constants.Fields.TIME_FIELD));
+        Constants.Fields.MESSAGE_INDEX_FIELD,
+        Constants.Fields.MESSAGE_SIZE_FIELD,
+        Constants.Fields.TIME_FIELD,
+        Constants.Fields.TIME_FIELD2));
   }
 }

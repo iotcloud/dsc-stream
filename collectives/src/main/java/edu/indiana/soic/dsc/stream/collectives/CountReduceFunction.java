@@ -4,7 +4,6 @@ import com.twitter.heron.api.bolt.IOutputCollector;
 import com.twitter.heron.api.grouping.IReduce;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Tuple;
-import edu.indiana.soic.dsc.stream.perf.Constants;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -62,14 +61,23 @@ public class CountReduceFunction implements IReduce {
     }
 
     if (allIn) {
-      for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
-        anchors.add(e.getValue().poll());
-      }
-
+      List<Long> times = new ArrayList<>();
       Object body = tuple.getValueByField(Constants.Fields.BODY);
       Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
       Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
-      Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
+
+      for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
+        Tuple t = e.getValue().poll();
+        anchors.add(t);
+        times.add(t.getLongByField(Constants.Fields.TIME_FIELD));
+
+        body = tuple.getValueByField(Constants.Fields.BODY);
+        size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+        index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+      }
+
+      Collections.sort(times);
+      Long time = times.get(0);
 
       List<Object> list = new ArrayList<>();
       list.add(body);

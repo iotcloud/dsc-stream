@@ -59,6 +59,11 @@
             <artifactId>iotrobots-utils</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>storm-bcs</groupId>
+            <version>1.0-SNAPSHOT</version>
+            <artifactId>storm-rabbitmq</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

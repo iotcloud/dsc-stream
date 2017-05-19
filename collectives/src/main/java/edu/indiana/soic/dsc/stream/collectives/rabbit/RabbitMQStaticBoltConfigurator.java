@@ -1,21 +1,22 @@
 package edu.indiana.soic.dsc.stream.collectives.rabbit;
 
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Tuple;
-import cgl.sensorstream.core.rabbitmq.DefaultRabbitMQMessageBuilder;
 import com.ss.commons.BoltConfigurator;
 import com.ss.commons.DestinationChanger;
 import com.ss.commons.DestinationSelector;
 import com.ss.commons.MessageBuilder;
+import com.twitter.heron.api.topology.OutputFieldsDeclarer;
+import com.twitter.heron.api.tuple.Tuple;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class RabbitMQStaticBoltConfigurator implements BoltConfigurator {
   int bolt;
+  String url;
 
-  public RabbitMQStaticBoltConfigurator(int bolt) {
+  public RabbitMQStaticBoltConfigurator(int bolt, String url) {
     this.bolt = bolt;
+    this.url = url;
   }
 
   @Override
@@ -49,6 +50,6 @@ public class RabbitMQStaticBoltConfigurator implements BoltConfigurator {
 
   @Override
   public DestinationChanger getDestinationChanger() {
-    return new StaticDestinations(bolt);
+    return new StaticDestinations(bolt, url);
   }
 }

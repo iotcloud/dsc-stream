@@ -6,7 +6,6 @@ import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
-import edu.indiana.soic.dsc.stream.perf.Constants;
 
 import java.util.*;
 import java.util.logging.Logger;

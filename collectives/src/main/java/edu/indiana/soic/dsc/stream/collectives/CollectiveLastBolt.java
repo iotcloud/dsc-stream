@@ -1,15 +1,17 @@
 package edu.indiana.soic.dsc.stream.collectives;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.bolt.OutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
-import edu.indiana.soic.dsc.stream.perf.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class CollectiveLastBolt extends BaseRichBolt {
@@ -19,6 +21,7 @@ public class CollectiveLastBolt extends BaseRichBolt {
   private boolean debug = false;
   private int printInveral = 0;
   private TopologyContext context;
+  private Kryo kryo;
 
   @Override
   public void prepare(Map stormConf, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -27,6 +30,8 @@ public class CollectiveLastBolt extends BaseRichBolt {
 
     this.outputCollector = outputCollector;
     this.context = topologyContext;
+    this.kryo = new Kryo();
+    Utils.registerClasses(kryo);
   }
 
   @Override
@@ -46,10 +51,21 @@ public class CollectiveLastBolt extends BaseRichBolt {
     try {
       outputCollector.ack(tuple);
 
+      Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
       if (debug && count % printInveral == 0) {
         LOG.info(context.getThisTaskId() + " Last Received tuple: " + count);
       }
+
       count++;
+      byte []b;
+      List<Object> list = new ArrayList<Object>();
+      SingleTrace singleTrace = new SingleTrace();
+      b = Utils.serialize(kryo, singleTrace);
+      list.add(b);
+      list.add("");
+      list.add(time);
+
+      outputCollector.emit(Constants.Fields.CHAIN_STREAM, list);
     } catch (Throwable t) {
       t.printStackTrace();
     }

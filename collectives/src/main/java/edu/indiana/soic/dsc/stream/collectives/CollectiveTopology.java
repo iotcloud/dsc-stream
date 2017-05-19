@@ -12,7 +12,6 @@ import com.twitter.heron.common.basics.ByteAmount;
 import com.twitter.heron.simulator.Simulator;
 import edu.indiana.soic.dsc.stream.collectives.rabbit.RabbitMQStaticBoltConfigurator;
 import edu.indiana.soic.dsc.stream.collectives.rabbit.RabbitMQStaticSpoutConfigurator;
-import edu.indiana.soic.dsc.stream.perf.*;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -23,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class CollectiveTopology {
-  private static Logger LOG = LoggerFactory.getLogger(BroadCastTopology.class);
+  private static Logger LOG = LoggerFactory.getLogger(CollectiveTopology.class);
 
   public static void main(String[] args) throws Exception {
     TopologyBuilder builder = new TopologyBuilder();
@@ -44,6 +43,7 @@ public class CollectiveTopology {
     options.addOption(Utils.createOption(Constants.ARGS_PRINT_INTERVAL, true, "Print debug messages", false));
     options.addOption(Utils.createOption(Constants.ARGS_MAX_PENDING, true, "Max pending", false));
     options.addOption(Utils.createOption(Constants.ARGS_RATE, true, "Max pending", false));
+    options.addOption(Utils.createOption(Constants.ARGS_URL, true, "URL", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -53,6 +53,8 @@ public class CollectiveTopology {
     String pValue = cmd.getOptionValue(Constants.ARGS_PARALLEL);
     int p = Integer.parseInt(pValue);
     String mode = cmd.getOptionValue(Constants.ARGS_MODE);
+    String url = cmd.getOptionValue(Constants.ARGS_URL);
+
     int streamManagers = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_SREAM_MGRS));
     int interval = 1;
     int maxPending = 10;
@@ -107,6 +109,10 @@ public class CollectiveTopology {
       buildThroughputTopologyAck(builder, p, conf, spoutParallel);
     } else if (mode.equals("r")) {
       buildThroughputTopologyReductionAck(builder, p, conf, spoutParallel);
+    } else if (mode.equals("ca")) {
+      buildLatencyReduceTopology(builder, p, conf, url);
+    } else if (mode.equals("ra")) {
+
     }
 
     // put the no of parallel tasks as a config property
@@ -169,18 +175,20 @@ public class CollectiveTopology {
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
   }
 
-  private static void buildLatencyTopology(TopologyBuilder builder, int stages, Config conf, int spoutParallel) {
+  private static void buildLatencyReduceTopology(TopologyBuilder builder, int stages, Config conf, String url) {
     ErrorReporter reporter = new ErrorReporter() {
       @Override
       public void reportError(Throwable throwable) {
+        throwable.printStackTrace();
         LOG.error("error occured", throwable);
       }
     };
     IRichSpout dataSpout;
     IRichBolt valueSendBolt;
 
-    dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0), reporter);
-    valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2), reporter);
+    dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
+    valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
+    OriginBolt originBolt = new OriginBolt();
 
     CollectiveLastBolt lastBolt = new CollectiveLastBolt();
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
@@ -188,14 +196,20 @@ public class CollectiveTopology {
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(256));
 
-    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).shuffleGrouping
-        (Constants.ThroughputTopology.THROUGHPUT_SPOUT,
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, originBolt, 1).
+        shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT);
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).allGrouping
+        (Constants.ThroughputTopology.THROUGHPUT_ORIGIN,
             Constants.Fields.CHAIN_STREAM);
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).reduceGrouping
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
             Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
-
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(
+        Constants.ThroughputTopology.THROUGHPUT_LAST, Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(256));
   }
 }

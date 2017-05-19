@@ -5,9 +5,6 @@ import com.twitter.heron.api.spout.SpoutOutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Fields;
-import edu.indiana.soic.dsc.stream.perf.Constants;
-import edu.indiana.soic.dsc.stream.perf.ThroughputSpout;
-import edu.indiana.soic.dsc.stream.perf.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

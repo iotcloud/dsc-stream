@@ -1,6 +1,4 @@
-package edu.indiana.soic.dsc.stream.perf;
-
-import org.apache.commons.cli.Option;
+package edu.indiana.soic.dsc.stream.collectives;
 
 public class Constants {
   public static final String ARGS_NAME = "name";
@@ -23,6 +21,7 @@ public class Constants {
   public static final String ARGS_THRPUT_NO_EMPTY_MSGS = "thrNEmpty";
   public static final String ARGS_MODE = "mode";
   public static final String ARGS_RATE = "rate";
+  public static final String ARGS_URL = "url";
   public static final String ARGS_THRPUT_FILENAME = "thrF";
   public static final String ARGS_SEND_INTERVAL = "int";
 
@@ -68,3 +67,5 @@ public class Constants {
     public static final String THROUGHPUT_ORIGIN = "throughputOrigin";
   }
 }
+
+

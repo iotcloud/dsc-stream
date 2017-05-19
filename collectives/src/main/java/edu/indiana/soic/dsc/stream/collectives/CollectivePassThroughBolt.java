@@ -6,7 +6,6 @@ import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
-import edu.indiana.soic.dsc.stream.perf.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,16 +40,13 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
       Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
       Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
       Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
-      Long previousTime = null;
-      if (tuple.getFields().contains(Constants.Fields.TIME_FIELD2)) {
-        previousTime = tuple.getLongByField(Constants.Fields.TIME_FIELD2);
-      }
+
       List<Object> list = new ArrayList<Object>();
       byte[] b = (byte[]) body;
-      if (!messageSizes.contains(b.length) && b.length != 1) {
-        LOG.error("The message size is in-correct");
-        System.out.println("The message size is in-correct");
-      }
+//      if (!messageSizes.contains(b.length) && b.length != 1) {
+//        LOG.error("The message size is in-correct");
+//        System.out.println("The message size is in-correct");
+//      }
       if (size != b.length) {
         LOG.error("The message size is in-correct");
         System.out.println("The message size is in-correct");
