@@ -105,11 +105,11 @@ public class CollectiveTopology {
 
     conf.setEnableAcking(true);
     if (mode.equals("c")) {
-
       buildThroughputTopologyAck(builder, p, conf, spoutParallel);
     } else if (mode.equals("r")) {
       buildThroughputTopologyReductionAck(builder, p, conf, spoutParallel);
     } else if (mode.equals("ca")) {
+      conf.setEnableAcking(false);
       buildLatencyReduceTopology(builder, p, conf, url);
     } else if (mode.equals("ra")) {
 

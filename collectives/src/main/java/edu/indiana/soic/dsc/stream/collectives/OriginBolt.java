@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class OriginBolt extends BaseRichBolt {
@@ -22,6 +23,7 @@ public class OriginBolt extends BaseRichBolt {
   private OutputCollector collector;
   private Kryo kryo;
   private boolean debug;
+  private int printInveral;
   private Map<Integer, byte[]> dataCache = new HashMap<>();
   private int index = 0;
 
@@ -32,6 +34,7 @@ public class OriginBolt extends BaseRichBolt {
     this.kryo = new Kryo();
     Utils.registerClasses(kryo);
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
+    this.printInveral = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
   }
 
   @Override
@@ -53,6 +56,11 @@ public class OriginBolt extends BaseRichBolt {
       dataCache.put(dataSize, b);
       index = 0;
     }
+
+    if (debug && index % printInveral == 0) {
+      LOG.log(Level.INFO, "Received message: " + index + " for size: " + dataSize );
+    }
+
     list.add(b);
     list.add(index);
     list.add(dataSize);
