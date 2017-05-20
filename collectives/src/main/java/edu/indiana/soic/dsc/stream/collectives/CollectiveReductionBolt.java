@@ -1,5 +1,6 @@
 package edu.indiana.soic.dsc.stream.collectives;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.bolt.OutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
@@ -19,7 +20,7 @@ public class CollectiveReductionBolt extends BaseRichBolt {
   private TopologyContext context;
   private Map<Integer, Queue<Tuple>> incoming = new HashMap<>();
   private Map<Integer, Integer> counts = new HashMap<>();
-
+  private Kryo kryo;
 
   @Override
   public void prepare(Map stormConf, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -29,6 +30,7 @@ public class CollectiveReductionBolt extends BaseRichBolt {
 
     this.outputCollector = outputCollector;
     this.context = topologyContext;
+    this.kryo = new Kryo();
 
     for (int t : taskIds) {
       incoming.put(t, new LinkedList<Tuple>());
@@ -50,9 +52,29 @@ public class CollectiveReductionBolt extends BaseRichBolt {
     }
 
     if (allIn) {
+      List<Long> times = new ArrayList<>();
+      List<Tuple> anchors = new ArrayList<>();
       for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
-        outputCollector.ack(e.getValue().poll());
+        Tuple t = e.getValue().poll();
+        anchors.add(t);
+        times.add(t.getLongByField(Constants.Fields.TIME_FIELD));
       }
+
+      byte []b;
+      List<Object> list = new ArrayList<>();
+      Collections.sort(times);
+      Long time = times.get(0);
+      SingleTrace singleTrace = new SingleTrace();
+      b = Utils.serialize(kryo, singleTrace);
+      list.add(b);
+      list.add("");
+      list.add(time);
+
+      for (Tuple t : anchors) {
+        outputCollector.ack(t);
+      }
+
+      outputCollector.emit(Constants.Fields.CHAIN_STREAM, list);
     }
 
     if (debug && count % printInveral == 0) {
