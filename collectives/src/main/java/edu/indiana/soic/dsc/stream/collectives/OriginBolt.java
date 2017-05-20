@@ -54,7 +54,6 @@ public class OriginBolt extends BaseRichBolt {
     } else {
       b = Utils.generateData(dataSize);
       dataCache.put(dataSize, b);
-      index = 0;
     }
 
     if (debug && index % printInveral == 0) {

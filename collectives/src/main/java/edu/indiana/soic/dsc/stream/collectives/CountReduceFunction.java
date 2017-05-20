@@ -62,18 +62,23 @@ public class CountReduceFunction implements IReduce {
 
     if (allIn) {
       List<Long> times = new ArrayList<>();
-      Object body = tuple.getValueByField(Constants.Fields.BODY);
-      Integer size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
-      Object index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+      Object body = null;
+      Integer size = 0;
+      Integer index = -1;
 
       for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
         Tuple t = e.getValue().poll();
         anchors.add(t);
         times.add(t.getLongByField(Constants.Fields.TIME_FIELD));
 
-        body = tuple.getValueByField(Constants.Fields.BODY);
-        size = tuple.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
-        index = tuple.getValueByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+        body = t.getValueByField(Constants.Fields.BODY);
+        size = t.getIntegerByField(Constants.Fields.MESSAGE_SIZE_FIELD);
+        int currentIndex = t.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+
+        if (index != -1 && currentIndex != index) {
+          LOG.severe("Index not equal ***********************  ");
+        }
+        index = currentIndex;
       }
 
       Collections.sort(times);

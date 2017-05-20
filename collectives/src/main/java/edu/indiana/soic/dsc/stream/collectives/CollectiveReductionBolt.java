@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 public class CollectiveReductionBolt extends BaseRichBolt {
-  private static Logger LOG = Logger.getLogger(CollectiveLastBolt.class.getName());
+  private static Logger LOG = Logger.getLogger(CollectiveReductionBolt.class.getName());
   private OutputCollector outputCollector;
   private int count = 0;
   private boolean debug = false;
@@ -54,10 +54,16 @@ public class CollectiveReductionBolt extends BaseRichBolt {
     if (allIn) {
       List<Long> times = new ArrayList<>();
       List<Tuple> anchors = new ArrayList<>();
+      int index = -1;
       for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
         Tuple t = e.getValue().poll();
         anchors.add(t);
         times.add(t.getLongByField(Constants.Fields.TIME_FIELD));
+        int currentIndex = t.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+        if (index != -1 && currentIndex != index) {
+          LOG.severe("Index not equal ***********************  ");
+        }
+        index = currentIndex;
       }
 
       byte []b;
