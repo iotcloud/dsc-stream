@@ -64,7 +64,7 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
         LOG.error("The message size is in-correct");
         System.out.println("The message size is in-correct");
       }
-      list.add(body);
+      list.add(b);
       list.add(index);
       list.add(size);
       list.add(time);
