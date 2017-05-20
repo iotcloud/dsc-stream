@@ -42,25 +42,18 @@ public class OriginBolt extends BaseRichBolt {
     Object body = tuple.getValueByField(Constants.Fields.BODY);
     Object time = tuple.getValueByField(Constants.Fields.TIME_FIELD);
     Long t = Long.valueOf(time.toString());
-    byte []b;
 
     List<Object> list = new ArrayList<Object>();
+    index++;
     // first bolt but not last
     ByteBuffer wrapped = ByteBuffer.wrap((byte[]) body); // big-endian by default
     int dataSize = wrapped.getInt(); // 1
-    if (dataCache.containsKey(dataSize)) {
-      b = dataCache.get(dataSize);
-      index++;
-    } else {
-      b = Utils.generateData(dataSize);
-      dataCache.put(dataSize, b);
-    }
 
     if (debug && index % printInveral == 0) {
       LOG.log(Level.INFO, "Received message: " + index + " for size: " + dataSize );
     }
 
-    list.add(b);
+    list.add(body);
     list.add(index);
     list.add(dataSize);
     list.add(t);

@@ -9,7 +9,9 @@ import com.twitter.heron.api.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
   private int count;
   private int printInveral;
   private TopologyContext context;
+  private Map<Integer, byte[]> dataCache = new HashMap<>();
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -42,7 +45,17 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
       Long time = tuple.getLongByField(Constants.Fields.TIME_FIELD);
 
       List<Object> list = new ArrayList<Object>();
-      byte[] b = (byte[]) body;
+      byte[] b;
+
+      ByteBuffer wrapped = ByteBuffer.wrap((byte[]) body); // big-endian by default
+      int dataSize = wrapped.getInt(); // 1
+      if (dataCache.containsKey(dataSize)) {
+        b = dataCache.get(dataSize);
+      } else {
+        b = Utils.generateData(dataSize);
+        dataCache.put(dataSize, b);
+      }
+
 //      if (!messageSizes.contains(b.length) && b.length != 1) {
 //        LOG.error("The message size is in-correct");
 //        System.out.println("The message size is in-correct");
