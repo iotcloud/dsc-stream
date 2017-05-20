@@ -191,7 +191,7 @@ public class CollectiveTopology {
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
 
-    CollectiveLastBolt lastBolt = new CollectiveLastBolt();
+    CollectiveReductionBolt lastBolt = new CollectiveReductionBolt();
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
 
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
@@ -229,7 +229,7 @@ public class CollectiveTopology {
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
 
-    CollectiveReductionBolt lastBolt = new CollectiveReductionBolt();
+    CollectiveLastBolt lastBolt = new CollectiveLastBolt();
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
 
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
@@ -242,9 +242,9 @@ public class CollectiveTopology {
         (Constants.ThroughputTopology.THROUGHPUT_ORIGIN,
             Constants.Fields.CHAIN_STREAM);
 
-    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).shuffleGrouping
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).reduceGrouping
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
-            Constants.Fields.CHAIN_STREAM);
+            Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(
