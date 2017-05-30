@@ -49,6 +49,7 @@ public class CountReduceFunction implements IReduce {
 
     Queue<Tuple> in = incoming.get(i);
     in.add(tuple);
+    long tupleTime = tuple.getLongByField(Constants.Fields.TIME_FIELD);
 
     int c = counts.get(i);
     counts.put(i, c + 1);
@@ -98,9 +99,9 @@ public class CountReduceFunction implements IReduce {
 
     if (debug && count % printInveral == 0) {
       for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
-
-        LOG.log(Level.INFO, String.format("%d Incoming %d, %d total: %d",
-            context.getThisTaskId(), e.getKey(), e.getValue().size(), counts.get(e.getKey())));
+        long elapsed = (System.nanoTime() - tupleTime) / 1000000;
+        LOG.log(Level.INFO, String.format("%d Incoming %d, %d total: %d %d",
+            context.getThisTaskId(), e.getKey(), e.getValue().size(), counts.get(e.getKey()), elapsed));
       }
     }
 

@@ -49,8 +49,10 @@ public class OriginBolt extends BaseRichBolt {
     ByteBuffer wrapped = ByteBuffer.wrap((byte[]) body); // big-endian by default
     int dataSize = wrapped.getInt(); // 1
 
+    //LOG.log(Level.INFO, "Received message: " + index + " for size: " + dataSize );
     if (debug && index % printInveral == 0) {
-      LOG.log(Level.INFO, "Received message: " + index + " for size: " + dataSize );
+      long elapsed = (System.nanoTime() - t) / 1000000;
+      LOG.log(Level.INFO, "Received message: " + index + " for size: " + dataSize + " " + elapsed);
     }
 
     list.add(body);

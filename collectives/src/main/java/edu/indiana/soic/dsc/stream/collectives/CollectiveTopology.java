@@ -23,7 +23,7 @@ import java.util.*;
 
 public class CollectiveTopology {
   private static Logger LOG = LoggerFactory.getLogger(CollectiveTopology.class);
-
+  static int megabytes = 256;
   public static void main(String[] args) throws Exception {
     TopologyBuilder builder = new TopologyBuilder();
 
@@ -195,25 +195,25 @@ public class CollectiveTopology {
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
 
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, originBolt, 1).
         shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).allGrouping
         (Constants.ThroughputTopology.THROUGHPUT_ORIGIN,
             Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).shuffleGrouping
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
             Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.THROUGHPUT_LAST, Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(256));
   }
 
   private static void buildLatencyReduceTopology(TopologyBuilder builder, int stages, Config conf, String url) {
@@ -235,24 +235,24 @@ public class CollectiveTopology {
     CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
 
     builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, originBolt, 1).
         shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).allGrouping
         (Constants.ThroughputTopology.THROUGHPUT_ORIGIN,
             Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).reduceGrouping
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
             Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(256));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.THROUGHPUT_LAST, Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(4096));
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(256));
   }
 }

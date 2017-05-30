@@ -71,8 +71,10 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
       list.add(System.nanoTime());
 
       count++;
+      // LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count);
       if (debug && count % printInveral == 0) {
-        LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count);
+        long elapsed = (System.nanoTime() - time) / 1000000;
+        LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count + " " + elapsed);
         // Utils.printTime(id, size, time, previousTime);
       }
 
