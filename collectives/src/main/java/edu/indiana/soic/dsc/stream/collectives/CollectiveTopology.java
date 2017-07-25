@@ -23,7 +23,7 @@ import java.util.*;
 
 public class CollectiveTopology {
   private static Logger LOG = LoggerFactory.getLogger(CollectiveTopology.class);
-  static int megabytes = 4096;
+  static int megabytes = 256;
   public static void main(String[] args) throws Exception {
     TopologyBuilder builder = new TopologyBuilder();
 
@@ -114,6 +114,9 @@ public class CollectiveTopology {
     } else if (mode.equals("ra")) {
       conf.setEnableAcking(false);
       buildLatencyTopology(builder, p, conf, url);
+    } else if (mode.equals("aca")) {
+      conf.setEnableAcking(false);
+      buildLatencyAllReduceTopology(builder, p, conf, url);
     }
 
     // put the no of parallel tasks as a config property
@@ -209,6 +212,46 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, 1).shuffleGrouping
         (Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
             Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(megabytes));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(
+        Constants.ThroughputTopology.THROUGHPUT_LAST, Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SEND, ByteAmount.fromMegabytes(megabytes));
+  }
+
+  private static void buildLatencyAllReduceTopology(TopologyBuilder builder, int stages, Config conf, String url) {
+    ErrorReporter reporter = new ErrorReporter() {
+      @Override
+      public void reportError(Throwable throwable) {
+        throwable.printStackTrace();
+        LOG.error("error occured", throwable);
+      }
+    };
+    IRichSpout dataSpout;
+    IRichBolt valueSendBolt;
+
+    dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
+    valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
+    OriginBolt originBolt = new OriginBolt();
+
+    CollectiveLastBolt lastBolt = new CollectiveLastBolt();
+    CollectivePassThroughBolt passThroughBolt = new CollectivePassThroughBolt();
+
+    builder.setSpout(Constants.ThroughputTopology.THROUGHPUT_SPOUT, dataSpout, 1);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_SPOUT, ByteAmount.fromMegabytes(megabytes));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, originBolt, 1).
+        shuffleGrouping(Constants.ThroughputTopology.THROUGHPUT_SPOUT);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_ORIGIN, ByteAmount.fromMegabytes(megabytes));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, passThroughBolt, stages).allGrouping
+        (Constants.ThroughputTopology.THROUGHPUT_ORIGIN,
+            Constants.Fields.CHAIN_STREAM);
+    conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH, ByteAmount.fromMegabytes(megabytes));
+
+    builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_LAST, lastBolt, stages).allReduceGrouping(
+        Constants.ThroughputTopology.THROUGHPUT_PASS_THROUGH,
+            Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
     conf.setComponentRam(Constants.ThroughputTopology.THROUGHPUT_LAST, ByteAmount.fromMegabytes(megabytes));
 
     builder.setBolt(Constants.ThroughputTopology.THROUGHPUT_SEND, valueSendBolt, 1).shuffleGrouping(

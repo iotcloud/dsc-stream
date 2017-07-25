@@ -32,11 +32,13 @@ public class CountReduceFunction implements IReduce {
     this.context = topologyContext;
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
     this.printInveral = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
+    String s = "";
     for (int i : list) {
       incoming.put(i, new LinkedList<Tuple>());
       counts.put(i, 0);
+      s += i + " ";
     }
-    LOG.info("Reduce function");
+    LOG.info("Reduce function: " + s);
   }
 
   @Override
@@ -95,6 +97,7 @@ public class CountReduceFunction implements IReduce {
       for (Tuple t : anchors) {
         collector.ack(t);
       }
+      LOG.info("Finished message");
     }
 
     if (debug && count % printInveral == 0) {
