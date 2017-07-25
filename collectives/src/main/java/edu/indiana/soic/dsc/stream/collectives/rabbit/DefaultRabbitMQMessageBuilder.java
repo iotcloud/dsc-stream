@@ -41,6 +41,7 @@ public class DefaultRabbitMQMessageBuilder implements MessageBuilder {
         } else {
           tuples.add(Long.toString(System.currentTimeMillis()));
         }
+        LOG.info("Received message");
       }
     }
     return tuples;
@@ -54,7 +55,7 @@ public class DefaultRabbitMQMessageBuilder implements MessageBuilder {
     Map<String, Object> props = new HashMap<String, Object>();
     props.put(Constants.Fields.SENSOR_ID_FIELD, sensorId);
     props.put("time", time);
-    // System.out.println("Sending message" + motion);
+    LOG.info("Sending message");
     return new RabbitMQMessage(null, null, null, new AMQP.BasicProperties.Builder().headers(props).build(), body);
   }
 }
