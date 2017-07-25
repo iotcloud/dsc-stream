@@ -9,6 +9,7 @@ import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
 
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class CollectiveReductionBolt extends BaseRichBolt {
@@ -81,6 +82,11 @@ public class CollectiveReductionBolt extends BaseRichBolt {
       }
 
       outputCollector.emit(Constants.Fields.CHAIN_STREAM, list);
+    }
+
+    for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
+      LOG.log(Level.INFO, String.format("%d Incoming %d, %d total: %d",
+          context.getThisTaskId(), e.getKey(), e.getValue().size(), counts.get(e.getKey())));
     }
 
     if (debug && count % printInveral == 0) {
