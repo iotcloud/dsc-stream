@@ -10,7 +10,6 @@ import com.twitter.heron.api.tuple.Tuple;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -24,7 +23,6 @@ public class OriginBolt extends BaseRichBolt {
   private Kryo kryo;
   private boolean debug;
   private int printInveral;
-  private Map<Integer, byte[]> dataCache = new HashMap<>();
   private int index = 0;
 
   @Override

@@ -50,10 +50,10 @@ public class DefaultRabbitMQMessageBuilder implements MessageBuilder {
   @Override
   public Object serialize(Tuple tuple, Object o) {
     byte []body = (byte[]) tuple.getValueByField("body");
-    Object sensorId = tuple.getValueByField(Constants.Fields.SENSOR_ID_FIELD);
+    // Object sensorId = tuple.getValueByField(Constants.Fields.SENSOR_ID_FIELD);
     Object time = tuple.getValueByField("time");
     Map<String, Object> props = new HashMap<String, Object>();
-    props.put(Constants.Fields.SENSOR_ID_FIELD, sensorId);
+    props.put(Constants.Fields.SENSOR_ID_FIELD, "");
     props.put("time", time);
     LOG.info("Sending message");
     return new RabbitMQMessage(null, null, null, new AMQP.BasicProperties.Builder().headers(props).build(), body);

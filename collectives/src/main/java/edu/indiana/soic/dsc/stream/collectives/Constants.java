@@ -15,6 +15,8 @@ public class Constants {
   public static final String ARGS_PIPE_SPLIT = "pls";
   public static final String ARGS_DEBUG = "g";
   public static final String ARGS_PRINT_INTERVAL = "pi";
+  public static final String UPPER_COMPONENT_NAME = "upperComponentName";
+  public static final String PASSTHROUGH_REMOVE_BODY = "removeBody";
 
   public static final String ARGS_THRPUT_SIZES = "thrSizes";
   public static final String ARGS_THRPUT_NO_MSGS = "thrN";
@@ -49,22 +51,15 @@ public class Constants {
     public static final String MESSAGE_INDEX_FIELD = "messageIndex";
   }
 
-  public abstract class Topology {
-    public static final String RECEIVE_SPOUT = "receive_spout";
-    public static final String WORKER_BOLT = "worker_bolt";
-    public static final String GATHER_BOLT = "gather_bolt";
-    public static final String RESULT_SEND_BOLT = "send_bolt";
-    public static final String CONTROL_SPOUT = "control_spout";
-    public static final String BROADCAST_BOLT = "broadcast_bolt";
-    public static final String CHAIN_BOLT = "chain_bolt";
-  }
-
   public abstract class ThroughputTopology {
-    public static final String THROUGHPUT_SPOUT = "throughputSpout";
-    public static final String THROUGHPUT_LAST = "throughputLastBolt";
-    public static final String THROUGHPUT_PASS_THROUGH = "throughputBolt";
-    public static final String THROUGHPUT_SEND = "throughputSend";
-    public static final String THROUGHPUT_ORIGIN = "throughputOrigin";
+    public static final String SPOUT = "spout";
+    public static final String LAST = "lastbolt";
+    public static final String DATAGEN = "datagenbolt";
+    public static final String PASSTHROUGH = "passthroughbolt";
+    public static final String SEND = "sendbolt";
+    public static final String ORIGIN = "originbolt";
+    public static final String MULTI_DATAGATHER = "multidatagather";
+    public static final String SINGLE_DATAGATHER = "singledatagather";
   }
 }
 

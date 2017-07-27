@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CollectiveLastBolt extends BaseRichBolt {
-  private static Logger LOG = LoggerFactory.getLogger(CollectiveLastBolt.class);
+public class SingleDataCollectionBolt extends BaseRichBolt {
+  private static Logger LOG = LoggerFactory.getLogger(SingleDataCollectionBolt.class);
   private OutputCollector outputCollector;
   private int count = 0;
   private boolean debug = false;
@@ -36,18 +36,6 @@ public class CollectiveLastBolt extends BaseRichBolt {
 
   @Override
   public void execute(Tuple tuple) {
-    throughputProcess(tuple);
-  }
-
-  @Override
-  public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-    outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
-        Constants.Fields.BODY,
-        Constants.Fields.SENSOR_ID_FIELD,
-        Constants.Fields.TIME_FIELD));
-  }
-
-  private void throughputProcess(Tuple tuple) {
     try {
       outputCollector.ack(tuple);
 
@@ -60,14 +48,27 @@ public class CollectiveLastBolt extends BaseRichBolt {
       byte []b;
       List<Object> list = new ArrayList<Object>();
       SingleTrace singleTrace = new SingleTrace();
+      singleTrace.setReceiveTimes(new long[]{0,0,0});
       b = Utils.serialize(kryo, singleTrace);
       list.add(b);
-      list.add("");
+      list.add(0);
+      list.add(0);
       list.add(time);
+      list.add(System.nanoTime());
 
       outputCollector.emit(Constants.Fields.CHAIN_STREAM, list);
     } catch (Throwable t) {
       t.printStackTrace();
     }
+  }
+
+  @Override
+  public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+    outputFieldsDeclarer.declareStream(Constants.Fields.CHAIN_STREAM, new Fields(
+        Constants.Fields.BODY,
+        Constants.Fields.MESSAGE_INDEX_FIELD,
+        Constants.Fields.MESSAGE_SIZE_FIELD,
+        Constants.Fields.TIME_FIELD,
+        Constants.Fields.TIME_FIELD2));
   }
 }

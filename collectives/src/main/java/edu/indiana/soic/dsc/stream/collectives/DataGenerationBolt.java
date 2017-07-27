@@ -15,11 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CollectivePassThroughBolt extends BaseRichBolt {
-  private static Logger LOG = LoggerFactory.getLogger(CollectivePassThroughBolt.class);
+public class DataGenerationBolt extends BaseRichBolt {
+  private static Logger LOG = LoggerFactory.getLogger(DataGenerationBolt.class);
   private OutputCollector collector;
-  private List<Integer> messageSizes = new ArrayList<Integer>();
-  private String id;
   private boolean debug;
   private int count;
   private int printInveral;
@@ -29,8 +27,6 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
     this.collector = outputCollector;
-    messageSizes = (List<Integer>) map.get(Constants.ARGS_THRPUT_SIZES);
-    this.id = topologyContext.getThisComponentId();
     this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
     printInveral = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
     context = topologyContext;
@@ -56,14 +52,11 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
         dataCache.put(dataSize, b);
       }
 
-//      if (!messageSizes.contains(b.length) && b.length != 1) {
-//        LOG.error("The message size is in-correct");
-//        System.out.println("The message size is in-correct");
-//      }
       if (size != b.length) {
         LOG.error("The message size is in-correct");
         System.out.println("The message size is in-correct");
       }
+
       list.add(b);
       list.add(index);
       list.add(size);
@@ -71,15 +64,11 @@ public class CollectivePassThroughBolt extends BaseRichBolt {
       list.add(System.nanoTime());
 
       count++;
-      // LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count);
       if (debug && count % printInveral == 0) {
         long elapsed = (System.nanoTime() - time) / 1000000;
         LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count + " " + elapsed);
-        // Utils.printTime(id, size, time, previousTime);
       }
 
-//      List<Tuple> anchors = new ArrayList<>();
-//      anchors.add(tuple);
       collector.emit(Constants.Fields.CHAIN_STREAM, tuple, list);
       collector.ack(tuple);
     } catch (Throwable t) {
