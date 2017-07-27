@@ -97,7 +97,9 @@ public class CountReduceFunction implements IReduce {
       for (Tuple t : anchors) {
         collector.ack(t);
       }
-      LOG.info("Finished message");
+      if (debug) {
+        LOG.info("Finished message");
+      }
     }
 
     if (debug && count % printInveral == 0) {
