@@ -81,8 +81,18 @@ public class MultiDataCollectionBolt extends BaseRichBolt {
       List<Long> arrivalTimesList = new ArrayList<>();
       List<Tuple> anchors = new ArrayList<>();
       Object body = null;
+      int index = -1;
+      int tmpIndex;
       for (Map.Entry<Integer, Queue<Tuple>> e : incoming.entrySet()) {
         Tuple t = e.getValue().poll();
+        tmpIndex = t.getIntegerByField(Constants.Fields.MESSAGE_INDEX_FIELD);
+        if (index == -1) {
+          index = tmpIndex;
+        } else {
+          if (tmpIndex != index) {
+            LOG.severe("Indexes are not equal, something is wrong");
+          }
+        }
         body = tuple.getValueByField(Constants.Fields.BODY);
         anchors.add(t);
         arrivalTimesList.add(arrivalTimes.get(e.getKey()).poll());
