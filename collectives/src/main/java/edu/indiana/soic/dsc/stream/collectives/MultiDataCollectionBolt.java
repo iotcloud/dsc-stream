@@ -101,7 +101,7 @@ public class MultiDataCollectionBolt extends BaseRichBolt {
         arrivalTimesArray[i] = arrivalTimesList.get(0);
       }
       if (!passThrough) {
-        singleTrace.setReceiveTimes(arrivalTimesArray);
+        // singleTrace.setReceiveTimes(arrivalTimesArray);
         b = Utils.serialize(kryo, singleTrace);
         list.add(b);
       } else {
