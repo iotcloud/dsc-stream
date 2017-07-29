@@ -77,7 +77,7 @@ public class MultiDataCollectionBolt extends BaseRichBolt {
     }
 
     if (allIn) {
-      List<Long> times = new ArrayList<>();
+      List<Long> timings = new ArrayList<>();
       List<Long> arrivalTimesList = new ArrayList<>();
       List<Tuple> anchors = new ArrayList<>();
       Object body = null;
@@ -90,21 +90,21 @@ public class MultiDataCollectionBolt extends BaseRichBolt {
           index = tmpIndex;
         } else {
           if (tmpIndex != index) {
-            LOG.severe("Indexes are not equal, something is wrong");
+            LOG.severe(String.format("Indexes are not equal, something is wrong %d %d", index, tmpIndex));
           }
         }
         body = tuple.getValueByField(Constants.Fields.BODY);
         anchors.add(t);
         arrivalTimesList.add(arrivalTimes.get(e.getKey()).poll());
-        times.add(t.getLongByField(Constants.Fields.TIME_FIELD));
+        timings.add(t.getLongByField(Constants.Fields.TIME_FIELD));
       }
 
       byte []b;
       List<Object> list = new ArrayList<>();
-      Collections.sort(times);
+      Collections.sort(timings);
       Collections.sort(arrivalTimesList);
 
-      Long time = times.get(0);
+      Long time = timings.get(0);
       SingleTrace singleTrace = new SingleTrace();
       long[] arrivalTimesArray = new long[arrivalTimesList.size()];
       for (int i = 0; i < arrivalTimesArray.length; i++) {
