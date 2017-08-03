@@ -5,13 +5,19 @@ import com.ss.rabbitmq.RabbitMQSpout;
 import com.ss.rabbitmq.bolt.RabbitMQBolt;
 import com.twitter.heron.api.Config;
 import com.twitter.heron.api.HeronSubmitter;
+import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.bolt.IRichBolt;
+import com.twitter.heron.api.spout.BaseRichSpout;
 import com.twitter.heron.api.spout.IRichSpout;
+import com.twitter.heron.api.topology.BoltDeclarer;
 import com.twitter.heron.api.topology.TopologyBuilder;
 import com.twitter.heron.common.basics.ByteAmount;
 import com.twitter.heron.simulator.Simulator;
 import edu.indiana.soic.dsc.stream.collectives.rabbit.RabbitMQStaticBoltConfigurator;
 import edu.indiana.soic.dsc.stream.collectives.rabbit.RabbitMQStaticSpoutConfigurator;
+import edu.indiana.soic.dsc.stream.collectives.thrput.ThroughputHeartBeatSpout;
+import edu.indiana.soic.dsc.stream.collectives.thrput.ThroughputOriginBolt;
+import edu.indiana.soic.dsc.stream.collectives.thrput.ThroughputSendBolt;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -44,6 +50,7 @@ public class CollectiveTopology {
     options.addOption(Utils.createOption(Constants.ARGS_MAX_PENDING, true, "Max pending", false));
     options.addOption(Utils.createOption(Constants.ARGS_RATE, true, "Max pending", false));
     options.addOption(Utils.createOption(Constants.ARGS_URL, true, "URL", false));
+    options.addOption(Utils.createOption(Constants.ARGS_MEM, true, "Mem", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -60,6 +67,10 @@ public class CollectiveTopology {
     int maxPending = 10;
     if (cmd.hasOption(Constants.ARGS_MAX_PENDING)) {
       maxPending = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_MAX_PENDING));
+    }
+
+    if (cmd.hasOption(Constants.ARGS_MEM)) {
+      megabytes = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_MEM));
     }
 
     if (cmd.hasOption(Constants.ARGS_PRINT_INTERVAL)) {
@@ -123,6 +134,21 @@ public class CollectiveTopology {
     } else if (mode.equals("b")) {
       conf.setEnableAcking(false);
       buildBroadCastTopology(builder, p, conf, url);
+    } else if (mode.equals("tb")) {
+      conf.setEnableAcking(false);
+      buildBroadCastThroughputTopology(builder, p, conf);
+    } else if (mode.equals("tarc")) {
+      conf.setEnableAcking(false);
+      buildAllReduceCollectiveThroughputTopology(builder, p, conf);
+    } else if (mode.equals("tars")) {
+      conf.setEnableAcking(false);
+      buildAllReduceSerialThroughputTopology(builder, p, conf);
+    } else if (mode.equals("trc")) {
+      conf.setEnableAcking(false);
+      buildReduceCollectiveThroughputTopology(builder, p, conf);
+    } else if (mode.equals("trs")) {
+      conf.setEnableAcking(false);
+      buildReduceSerialThroughputTopology(builder, p, conf);
     }
 
     // put the no of parallel tasks as a config property
@@ -193,12 +219,30 @@ public class CollectiveTopology {
         LOG.error("error occured", throwable);
       }
     };
-    IRichSpout dataSpout;
-    IRichBolt valueSendBolt;
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
 
     dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
+
+    buildReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, firstParallel, false);
+  }
+
+  private static void buildReduceSerialThroughputTopology(TopologyBuilder builder, int firstParallel, Config conf) {
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
+
+    dataSpout = new ThroughputHeartBeatSpout();
+    valueSendBolt = new ThroughputSendBolt();
+    ThroughputOriginBolt originBolt = new ThroughputOriginBolt();
+    buildReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, firstParallel, true);
+  }
+
+  private static void buildReduceSerialCore(TopologyBuilder builder, Config conf, BaseRichSpout dataSpout,
+                                            BaseRichBolt originBolt, BaseRichBolt valueSendBolt, int stages,
+                                            boolean trput) {
+
 
     MultiDataCollectionBolt lastBolt = new MultiDataCollectionBolt();
     DataGenerationBolt dataGenerationBolt = new DataGenerationBolt();
@@ -207,11 +251,11 @@ public class CollectiveTopology {
     builder.setSpout(Constants.ThroughputTopology.SPOUT, dataSpout, 1);
     conf.setComponentRam(Constants.ThroughputTopology.SPOUT, ByteAmount.fromMegabytes(megabytes));
 
-    builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
+    BoltDeclarer boltDeclarer = builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
         shuffleGrouping(Constants.ThroughputTopology.SPOUT);
     conf.setComponentRam(Constants.ThroughputTopology.ORIGIN, ByteAmount.fromMegabytes(megabytes));
 
-    builder.setBolt(Constants.ThroughputTopology.DATAGEN, dataGenerationBolt, firstParallel).allGrouping
+    builder.setBolt(Constants.ThroughputTopology.DATAGEN, dataGenerationBolt, stages).allGrouping
         (Constants.ThroughputTopology.ORIGIN,
             Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.DATAGEN, ByteAmount.fromMegabytes(megabytes));
@@ -224,6 +268,9 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.MULTI_DATAGATHER, Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.SEND, ByteAmount.fromMegabytes(megabytes));
+    if (trput) {
+      boltDeclarer.shuffleGrouping(Constants.ThroughputTopology.SEND, Constants.Fields.CHAIN_STREAM);
+    }
   }
 
   private static void buildReduceCollectiveTopology(TopologyBuilder builder, int stages, Config conf, String url) {
@@ -234,20 +281,36 @@ public class CollectiveTopology {
         LOG.error("error occured", throwable);
       }
     };
-    IRichSpout dataSpout;
-    IRichBolt valueSendBolt;
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
 
     dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
 
+    buildReduceCollectiveCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, false);
+  }
+
+  private static void buildReduceCollectiveThroughputTopology(TopologyBuilder builder, int stages, Config conf) {
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
+
+    dataSpout = new ThroughputHeartBeatSpout();
+    valueSendBolt = new ThroughputSendBolt();
+    ThroughputOriginBolt originBolt = new ThroughputOriginBolt();
+    buildReduceCollectiveCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, true);
+  }
+
+  private static void buildReduceCollectiveCore(TopologyBuilder builder, Config conf, BaseRichSpout dataSpout,
+                                                BaseRichBolt originBolt, BaseRichBolt valueSendBolt, int stages,
+                                                boolean trput) {
     SingleDataCollectionBolt singleDataCollectionBolt = new SingleDataCollectionBolt();
     DataGenerationBolt passThroughBolt = new DataGenerationBolt();
 
     builder.setSpout(Constants.ThroughputTopology.SPOUT, dataSpout, 1);
     conf.setComponentRam(Constants.ThroughputTopology.SPOUT, ByteAmount.fromMegabytes(megabytes));
 
-    builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
+    BoltDeclarer boltDeclarer = builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
         shuffleGrouping(Constants.ThroughputTopology.SPOUT);
     conf.setComponentRam(Constants.ThroughputTopology.ORIGIN, ByteAmount.fromMegabytes(megabytes));
 
@@ -264,6 +327,19 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.SINGLE_DATAGATHER, Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.SEND, ByteAmount.fromMegabytes(megabytes));
+    if (trput) {
+      boltDeclarer.shuffleGrouping(Constants.ThroughputTopology.SEND, Constants.Fields.CHAIN_STREAM);
+    }
+  }
+
+  private static void buildAllReduceSerialThroughputTopology(TopologyBuilder builder, int stages, Config conf) {
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
+
+    dataSpout = new ThroughputHeartBeatSpout();
+    valueSendBolt = new ThroughputSendBolt();
+    ThroughputOriginBolt originBolt = new ThroughputOriginBolt();
+    buildAllReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, false);
   }
 
   private static void buildAllReduceSerialTopology(TopologyBuilder builder, int stages, Config conf, String url) {
@@ -274,14 +350,19 @@ public class CollectiveTopology {
         LOG.error("error occured", throwable);
       }
     };
-    IRichSpout dataSpout;
-    IRichBolt valueSendBolt;
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
 
     dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
-    DataGenerationBolt dataGenerationBolt = new DataGenerationBolt();
+    buildAllReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, true);
+  }
 
+  private static void buildAllReduceSerialCore(TopologyBuilder builder, Config conf, BaseRichSpout dataSpout,
+                                               BaseRichBolt originBolt, BaseRichBolt valueSendBolt, int stages,
+                                               boolean trput) {
+    DataGenerationBolt dataGenerationBolt = new DataGenerationBolt();
     SingleDataCollectionBolt singleDataCollectionBolt = new SingleDataCollectionBolt();
     MultiDataCollectionBolt multiDataCollectionBoltOne = new MultiDataCollectionBolt();
     multiDataCollectionBoltOne.setPassThrough(true);
@@ -290,7 +371,7 @@ public class CollectiveTopology {
     builder.setSpout(Constants.ThroughputTopology.SPOUT, dataSpout, 1);
     conf.setComponentRam(Constants.ThroughputTopology.SPOUT, ByteAmount.fromMegabytes(megabytes));
 
-    builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
+    BoltDeclarer boltDeclarer = builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
         shuffleGrouping(Constants.ThroughputTopology.SPOUT);
     conf.setComponentRam(Constants.ThroughputTopology.ORIGIN, ByteAmount.fromMegabytes(megabytes));
 
@@ -321,6 +402,9 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.SEND, valueSendBolt, 1).shuffleGrouping(
         multiTwo, Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.SEND, ByteAmount.fromMegabytes(megabytes));
+    if (trput) {
+      boltDeclarer.shuffleGrouping(Constants.ThroughputTopology.SEND, Constants.Fields.CHAIN_STREAM);
+    }
   }
 
   private static void buildAllReduceCollectiveTopology(TopologyBuilder builder, int stages, Config conf, String url) {
@@ -331,13 +415,27 @@ public class CollectiveTopology {
         LOG.error("error occured", throwable);
       }
     };
-    IRichSpout dataSpout;
-    IRichBolt valueSendBolt;
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
 
     dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
 
+    buildAllReduceCollectiveCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, false);
+  }
+
+  private static void buildAllReduceCollectiveThroughputTopology(TopologyBuilder builder, int stages, Config conf) {
+    ThroughputHeartBeatSpout dataSpout = new ThroughputHeartBeatSpout();
+    ThroughputSendBolt  valueSendBolt = new ThroughputSendBolt();
+    ThroughputOriginBolt originBolt = new ThroughputOriginBolt();
+
+    buildAllReduceCollectiveCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, true);
+  }
+
+  private static void buildAllReduceCollectiveCore(TopologyBuilder builder, Config conf, BaseRichSpout dataSpout,
+                                                   BaseRichBolt originBolt, BaseRichBolt valueSendBolt, int stages,
+                                                   boolean trput) {
     SingleDataCollectionBolt singleDataCollectionBolt = new SingleDataCollectionBolt();
     DataGenerationBolt dataGenerationBolt = new DataGenerationBolt();
     MultiDataCollectionBolt multiDataCollectionBolt = new MultiDataCollectionBolt();
@@ -346,7 +444,7 @@ public class CollectiveTopology {
     builder.setSpout(Constants.ThroughputTopology.SPOUT, dataSpout, 1);
     conf.setComponentRam(Constants.ThroughputTopology.SPOUT, ByteAmount.fromMegabytes(megabytes));
 
-    builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
+    BoltDeclarer boltDeclarer = builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
         shuffleGrouping(Constants.ThroughputTopology.SPOUT);
     conf.setComponentRam(Constants.ThroughputTopology.ORIGIN, ByteAmount.fromMegabytes(megabytes));
 
@@ -357,7 +455,7 @@ public class CollectiveTopology {
 
     builder.setBolt(Constants.ThroughputTopology.SINGLE_DATAGATHER, singleDataCollectionBolt, stages).allReduceGrouping(
         Constants.ThroughputTopology.DATAGEN,
-            Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
+        Constants.Fields.CHAIN_STREAM, new CountReduceFunction());
     conf.setComponentRam(Constants.ThroughputTopology.SINGLE_DATAGATHER, ByteAmount.fromMegabytes(megabytes));
 
     builder.setBolt(Constants.ThroughputTopology.MULTI_DATAGATHER, multiDataCollectionBolt, 1).shuffleGrouping(
@@ -368,6 +466,9 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.MULTI_DATAGATHER, Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.SEND, ByteAmount.fromMegabytes(megabytes));
+    if (trput) {
+      boltDeclarer.shuffleGrouping(Constants.ThroughputTopology.SEND, Constants.Fields.CHAIN_STREAM);
+    }
   }
 
   private static void buildBroadCastTopology(TopologyBuilder builder, int stages, Config conf, String url) {
@@ -378,13 +479,27 @@ public class CollectiveTopology {
         LOG.error("error occured", throwable);
       }
     };
-    IRichSpout dataSpout;
-    IRichBolt valueSendBolt;
+    BaseRichSpout dataSpout;
+    BaseRichBolt valueSendBolt;
 
     dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
 
+    buildBroadcastCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, false);
+  }
+
+  private static void buildBroadCastThroughputTopology(TopologyBuilder builder, int stages, Config conf) {
+    ThroughputHeartBeatSpout dataSpout = new ThroughputHeartBeatSpout();
+    ThroughputOriginBolt originBolt = new ThroughputOriginBolt();
+    ThroughputSendBolt throughputSendBolt = new ThroughputSendBolt();
+
+    buildBroadcastCore(builder, conf, dataSpout, originBolt, throughputSendBolt, stages, true);
+  }
+
+  private static void buildBroadcastCore(TopologyBuilder builder, Config conf, BaseRichSpout dataSpout,
+                                         BaseRichBolt originBolt, BaseRichBolt valueSendBolt,
+                                         int stages, boolean trput) {
     MultiDataCollectionBolt multiDataCollectBolt = new MultiDataCollectionBolt();
     DataGenerationBolt dataGenerationBolt = new DataGenerationBolt();
     SingleDataCollectionBolt singleDataCollectionBolt = new SingleDataCollectionBolt();
@@ -393,8 +508,9 @@ public class CollectiveTopology {
     builder.setSpout(Constants.ThroughputTopology.SPOUT, dataSpout, 1);
     conf.setComponentRam(Constants.ThroughputTopology.SPOUT, ByteAmount.fromMegabytes(megabytes));
 
-    builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
-        shuffleGrouping(Constants.ThroughputTopology.SPOUT);
+    BoltDeclarer boltDeclarer = builder.setBolt(Constants.ThroughputTopology.ORIGIN, originBolt, 1).
+        shuffleGrouping(Constants.ThroughputTopology.SPOUT).shuffleGrouping(Constants.ThroughputTopology.SEND,
+        Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.ORIGIN, ByteAmount.fromMegabytes(megabytes));
 
     builder.setBolt(Constants.ThroughputTopology.DATAGEN, dataGenerationBolt, 1).shuffleGrouping(
@@ -412,5 +528,8 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.MULTI_DATAGATHER, Constants.Fields.CHAIN_STREAM);
     conf.setComponentRam(Constants.ThroughputTopology.SEND, ByteAmount.fromMegabytes(megabytes));
+    if (trput) {
+      boltDeclarer.shuffleGrouping(Constants.ThroughputTopology.SEND, Constants.Fields.CHAIN_STREAM);
+    }
   }
 }
