@@ -52,6 +52,10 @@ public class DataGenerationBolt extends BaseRichBolt {
         dataCache.put(dataSize, b);
       }
 
+      if (debug && count % printInveral == 0) {
+        LOG.info("Data size: " + dataSize);
+      }
+
       if (size != b.length) {
         LOG.error("The message size is in-correct");
         System.out.println("The message size is in-correct");
