@@ -263,7 +263,7 @@ public class CollectiveTopology {
     builder.setBolt(Constants.ThroughputTopology.MULTI_DATAGATHER, lastBolt, 1).shuffleGrouping
         (Constants.ThroughputTopology.DATAGEN,
             Constants.Fields.CHAIN_STREAM);
-    conf.setComponentRam(Constants.ThroughputTopology.MULTI_DATAGATHER, ByteAmount.fromMegabytes(megabytes));
+    conf.setComponentRam(Constants.ThroughputTopology.MULTI_DATAGATHER, ByteAmount.fromMegabytes(megabytes * 2));
 
     builder.setBolt(Constants.ThroughputTopology.SEND, valueSendBolt, 1).shuffleGrouping(
         Constants.ThroughputTopology.MULTI_DATAGATHER, Constants.Fields.CHAIN_STREAM);
