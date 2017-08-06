@@ -339,7 +339,7 @@ public class CollectiveTopology {
     dataSpout = new ThroughputHeartBeatSpout();
     valueSendBolt = new ThroughputSendBolt();
     ThroughputOriginBolt originBolt = new ThroughputOriginBolt();
-    buildAllReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, false);
+    buildAllReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, true);
   }
 
   private static void buildAllReduceSerialTopology(TopologyBuilder builder, int stages, Config conf, String url) {
@@ -356,7 +356,7 @@ public class CollectiveTopology {
     dataSpout = new RabbitMQSpout(new RabbitMQStaticSpoutConfigurator(0, url), reporter);
     valueSendBolt = new RabbitMQBolt(new RabbitMQStaticBoltConfigurator(2, url), reporter);
     OriginBolt originBolt = new OriginBolt();
-    buildAllReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, true);
+    buildAllReduceSerialCore(builder, conf, dataSpout, originBolt, valueSendBolt, stages, false);
   }
 
   private static void buildAllReduceSerialCore(TopologyBuilder builder, Config conf, BaseRichSpout dataSpout,
