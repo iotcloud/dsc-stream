@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-main_folder="/home/supun/data/collectives"
+main_folder="/home/supun/experiments/collectives2"
 
 data = [1000, 2000, 4000, 8000, 16000, 32000]
 xlabels = [1, 2, 4, 8, 16, 32]
 markers=["o", "x", "^", "v", "D", "*"]
 cls=["red", "blue", "green", "yellow", "black", "cyan", "magenta"]
 
-def plot(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=None, plot=None) :
+def plot(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=None, plot=None, logy=False, ylim=None) :
     if not plot:
         p = plt
     else:
@@ -16,8 +16,13 @@ def plot(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=
     if not col:
         col = cls
     for i in range(len(y)):
-        p.plot(x, y[i], color=col[i], marker=markers[i])
+        if logy:
+            p.semilogy(x, y[i], color=col[i], marker=markers[i])
+        else:
+            p.plot(x, y[i], color=col[i], marker=markers[i])
 
+    if ylim:
+        p.ylim(ylim)
     if not xlabel:
         xlabel = 'message size (KB)'
     p.xlabel(xlabel)
@@ -105,9 +110,9 @@ def plot_reduce():
     folder_bc_256_2=main_folder + "/rc/256_16_2x2_2x2"
     folder_bc_64_2=main_folder + "/rc/64_16_2x2_2x2"
 
-    serial_128=main_folder + "/rs/128_16_2x2_2x2"
-    serial_64=main_folder + "/rs/64_16_2x2_2x2"
-    serial_256=main_folder + "/rs/256_16_2x2_2x2"
+    serial_128=main_folder + "/rs2/128_16_2x2_2x2"
+    serial_64=main_folder + "/rs2/64_16_2x2_2x2"
+    serial_256=main_folder + "/rs2/256_16_2x2_2x2"
 
     flat_values = []
     avgs = get_avgs(folder_bc_256)
@@ -134,25 +139,25 @@ def plot_reduce():
     serial_values.append(avgs)
 
     binary_speed = []
-    binary_speed.append([b / m for b,m in zip(serial_values[0], binary_values[0])])
-    binary_speed.append([b / m for b,m in zip(serial_values[1], binary_values[1])])
-    binary_speed.append([b / m for b,m in zip(serial_values[2], binary_values[2])])
+    binary_speed.append([m for b,m in zip(serial_values[0], binary_values[0])])
+    binary_speed.append([m for b,m in zip(serial_values[1], binary_values[1])])
+    binary_speed.append([m for b,m in zip(serial_values[2], binary_values[2])])
 
     flat_speed = []
-    flat_speed.append([b / m for b,m in zip(serial_values[0], flat_values[0])])
-    flat_speed.append([b / m for b,m in zip(serial_values[1], flat_values[1])])
-    flat_speed.append([b / m for b,m in zip(serial_values[2], flat_values[2])])
+    flat_speed.append([m for b,m in zip(serial_values[0], flat_values[0])])
+    flat_speed.append([m for b,m in zip(serial_values[1], flat_values[1])])
+    flat_speed.append([m for b,m in zip(serial_values[2], flat_values[2])])
 
-    serial_values[0][5] = None
-    flat_speed[0][5] = None
-    binary_speed[0][5] = None
+    # serial_values[0][5] = None
+    # flat_speed[0][5] = None
+    # binary_speed[0][5] = None
 
     plt.subplot2grid((1,11), (0, 0), colspan=3)
-    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt)
+    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt, ylim=[0,300])
     plt.subplot2grid((1,11), (0, 4), colspan=3)
-    plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt)
+    plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylim=[2,10])
     plt.subplot2grid((1,11), (0, 8), colspan=3)
-    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt)
+    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt, logy=True)
 
     plt.show()
 
@@ -224,9 +229,9 @@ def get_avgs(folder):
 
 
 def main():
-    plot_bcast()
+    # plot_bcast()
     plot_reduce()
-    plot_allreduce()
+    # plot_allreduce()
 
 def calc(folder, data, tasks):
     for d in data:
