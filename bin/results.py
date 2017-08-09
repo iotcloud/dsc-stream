@@ -1,14 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 main_folder="/home/supun/experiments/collectives2"
+thrput_folder="/home/supun/experiments/collectives3"
 
 data = [1000, 2000, 4000, 8000, 16000, 32000]
 xlabels = [1, 2, 4, 8, 16, 32]
 markers=["o", "x", "^", "v", "D", "*"]
 cls=["red", "blue", "green", "yellow", "black", "cyan", "magenta"]
 
-def plot(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=None, plot=None, logy=False, ylim=None) :
+def plot(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=None, plot=None, logy=False, ylim=None, legendloc=None) :
     if not plot:
         p = plt
     else:
@@ -36,13 +38,34 @@ def plot(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=
     for l in y:
         print title, l
     p.grid(True)
-    p.legend(legend, loc="upper left")
+    if legendloc:
+        p.legend(legend, loc=legendloc)
+    else:
+        p.legend(legend, loc="upper left")
     p.minorticks_on()
     p.grid(b=True, which='major', color='k', linestyle='-')
-    p.grid(b=True, which='minor', color='g', linestyle='-', alpha=0.2)
+    p.grid(b=True, which='minor', color='grey', linestyle='-', alpha=0.2)
     if not plot:
         p.show()
     return plt
+
+def go_through_file(indir, prefix):
+    ret = {}
+    for root, dirs, filenames in os.walk(indir):
+        for f in filenames:
+            if f.startswith(prefix):
+                results_file = os.path.join(root, f)
+                with open(results_file, "r") as in_f:
+                    for line in in_f:
+                        splits = line.split(" ")
+                        if len(splits) > 2:
+                            size = int(splits[2])
+                            # print size
+                            val = float(splits[5])
+                            # print messages
+                            ret[size] = val
+    print indir, prefix, ret
+    return ret
 
 def average(file_name):
     with open(file_name, "r") as in_f:
@@ -61,10 +84,37 @@ def average(file_name):
             avg_of_numbers = sum(numbers[clip:(len(numbers) - clip)]) / (len(numbers) * .75)
     return (avg_of_numbers + 0.0) / 1000000
 
+def plot_tallreduce(folder):
+    tarc_folder = folder + "/tarc"
+    tars_folder = folder + "/tars"
+    tarc_vals_128 = go_through_file(tarc_folder, "128")
+    tarc_vals_256 = go_through_file(tarc_folder, "256")
+    tarc_vals_64 = go_through_file(tarc_folder, "64")
+    tars_vals_128 = go_through_file(tars_folder, "128")
+    tars_vals_256 = go_through_file(tars_folder, "256")
+    tars_vals_64 = go_through_file(tars_folder, "64")
+
+    serial_values = []
+    serial_values.append([tars_vals_256[k] for k in data])
+    serial_values.append([tars_vals_128[k] for k in data])
+    serial_values.append([tars_vals_64[k] for k in data])
+
+    binary_values = []
+    binary_values.append([m/b for b,m in zip(serial_values[0], [tarc_vals_256[k] for k in data])])
+    binary_values.append([m/b for b,m in zip(serial_values[0], [tarc_vals_128[k] for k in data])])
+    binary_values.append([m/b  for b,m in zip(serial_values[0], [tarc_vals_64[k] for k in data])])
+
+    plt.subplot2grid((1,13), (0, 0), colspan=6)
+    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt)
+    plt.subplot2grid((1,13), (0, 7), colspan=6)
+    plot(binary_values, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylabel="Serial throughput / Binary throughput")
+
+    plt.show()
+
 def plot_allreduce():
-    folder_bc_128_2=main_folder + "/arc/128_16_2x2_2x2"
-    folder_bc_256_2=main_folder + "/arc/256_16_2x2_2x2"
-    folder_bc_64_2=main_folder + "/arc/64_16_2x2_2x2"
+    folder_bc_128_2=main_folder + "/arc2/128_16_2x2_2x2"
+    folder_bc_256_2=main_folder + "/arc2/256_16_2x2_2x2"
+    folder_bc_64_2=main_folder + "/arc2/64_16_2x2_2x2"
 
     serial_128=main_folder + "/ars/128_16_2x2_2x64"
     serial_64=main_folder + "/ars/64_16_2x2_2x64"
@@ -91,13 +141,40 @@ def plot_allreduce():
     binary_speed.append([b / m for b,m in zip(serial_values[1], binary_values[1])])
     binary_speed.append([b / m for b,m in zip(serial_values[2], binary_values[2])])
 
-    serial_values[0][5] = None
-    binary_speed[0][5] = None
+    # serial_values[0][5] = None
+    # binary_speed[0][5] = None
 
-    plt.subplot2grid((1,11), (0, 0), colspan=5)
+    plt.subplot2grid((1,13), (0, 0), colspan=6)
     plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt)
-    plt.subplot2grid((1,11), (0, 6), colspan=5)
+    plt.subplot2grid((1,13), (0, 7), colspan=6)
     plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylabel="Serial time / Binary tree time")
+
+    plt.show()
+
+def plot_treduce(folder):
+    tarc_folder = folder + "/trc"
+    tars_folder = folder + "/trs"
+    tarc_vals_128 = go_through_file(tarc_folder, "128")
+    tarc_vals_256 = go_through_file(tarc_folder, "256")
+    tarc_vals_64 = go_through_file(tarc_folder, "64")
+    tars_vals_128 = go_through_file(tars_folder, "128")
+    tars_vals_256 = go_through_file(tars_folder, "256")
+    tars_vals_64 = go_through_file(tars_folder, "64")
+
+    serial_values = []
+    serial_values.append([tars_vals_256[k] for k in data])
+    serial_values.append([tars_vals_128[k] for k in data])
+    serial_values.append([tars_vals_64[k] for k in data])
+
+    binary_values = []
+    binary_values.append([m/b for b,m in zip(serial_values[0], [tarc_vals_256[k] for k in data])])
+    binary_values.append([m/b for b,m in zip(serial_values[0], [tarc_vals_128[k] for k in data])])
+    binary_values.append([m/b  for b,m in zip(serial_values[0], [tarc_vals_64[k] for k in data])])
+
+    plt.subplot2grid((1,13), (0, 0), colspan=6)
+    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt)
+    plt.subplot2grid((1,13), (0, 7), colspan=6)
+    plot(binary_values, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylabel="Serial throughput / Binary throughput")
 
     plt.show()
 
@@ -139,6 +216,29 @@ def plot_reduce():
     serial_values.append(avgs)
 
     binary_speed = []
+    binary_speed.append([b / m for b,m in zip(serial_values[0], binary_values[0])])
+    binary_speed.append([b / m for b,m in zip(serial_values[1], binary_values[1])])
+    binary_speed.append([b / m for b,m in zip(serial_values[2], binary_values[2])])
+
+    flat_speed = []
+    flat_speed.append([b / m for b,m in zip(serial_values[0], flat_values[0])])
+    flat_speed.append([b / m for b,m in zip(serial_values[1], flat_values[1])])
+    flat_speed.append([b / m for b,m in zip(serial_values[2], flat_values[2])])
+
+    # serial_values[0][5] = None
+    # flat_speed[0][5] = None
+    # binary_speed[0][5] = None
+
+    plt.subplot2grid((1,20), (0, 0), colspan=6)
+    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt, ylabel="Serial time / Binary tree time")
+    plt.subplot2grid((1,20), (0, 7), colspan=6)
+    plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylabel="Serial time / Binary tree time")
+    plt.subplot2grid((1,20), (0, 14), colspan=6)
+    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt, ylabel="Serial time / Binary tree time")
+
+    plt.show()
+
+    binary_speed = []
     binary_speed.append([m for b,m in zip(serial_values[0], binary_values[0])])
     binary_speed.append([m for b,m in zip(serial_values[1], binary_values[1])])
     binary_speed.append([m for b,m in zip(serial_values[2], binary_values[2])])
@@ -152,14 +252,46 @@ def plot_reduce():
     # flat_speed[0][5] = None
     # binary_speed[0][5] = None
 
-    plt.subplot2grid((1,11), (0, 0), colspan=3)
-    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt, ylim=[0,300])
-    plt.subplot2grid((1,11), (0, 4), colspan=3)
-    plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylim=[2,10])
-    plt.subplot2grid((1,11), (0, 8), colspan=3)
-    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt, logy=True)
+    plt.subplot2grid((1,20), (0, 0), colspan=6)
+    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt)
+    plt.subplot2grid((1,20), (0, 7), colspan=6)
+    plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt)
+    plt.subplot2grid((1,20), (0, 14), colspan=6)
+    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt)
 
     plt.show()
+
+def plot_tbcast(folder):
+    tarc_folder = folder + "/tbc"
+    tars_folder = folder + "/tbs"
+    tarc_vals_128 = go_through_file(tarc_folder, "128")
+    tarc_vals_256 = go_through_file(tarc_folder, "256")
+    tarc_vals_64 = go_through_file(tarc_folder, "64")
+    tars_vals_128 = go_through_file(tars_folder, "128")
+    tars_vals_256 = go_through_file(tars_folder, "256")
+    tars_vals_64 = go_through_file(tars_folder, "64")
+
+    serial_values = []
+    serial_values.append([tars_vals_256[k] for k in data])
+    serial_values.append([tars_vals_128[k] for k in data])
+    serial_values.append([tars_vals_64[k] for k in data])
+
+    binary_values = []
+    binary_values.append([m/b for b,m in zip(serial_values[0], [tarc_vals_256[k] for k in data])])
+    binary_values.append([m/b for b,m in zip(serial_values[0], [tarc_vals_128[k] for k in data])])
+    binary_values.append([m/b  for b,m in zip(serial_values[0], [tarc_vals_64[k] for k in data])])
+
+    plt.subplot2grid((1,13), (0, 0), colspan=6)
+    plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt, legendloc="upper right", logy=True)
+    plt.subplot2grid((1,13), (0, 7), colspan=6)
+    plot(binary_values, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylabel="Serial throughput / Binary throughput")
+
+    fig = plt.gcf()
+    fig.set_size_inches(10.5, 40.5)
+    fig.savefig('test2png.png', dpi=100)
+
+    plt.show()
+
 
 def plot_bcast():
     folder_bc_128=main_folder + "/bc/128_16_2x2_64x64"
@@ -209,12 +341,12 @@ def plot_bcast():
     flat_speed.append([b / m for b,m in zip(serial_values[2], flat_values[2])])
 
     # plot(values, xlabels, legend=["collective-256", "collective-128","collective-64", "collective-256-2", "collective-128-2","collective-64-2", "serial-256", "serial-128", "serial-64"], title="Reduce")
-    plt.subplot2grid((1,11), (0, 0), colspan=3)
+    plt.subplot2grid((1,20), (0, 0), colspan=6)
     plot(serial_values, xlabels, legend=["serial-256", "serial-128","serial-64"], title="Serial", plot=plt)
-    plt.subplot2grid((1,11), (0, 4), colspan=3)
+    plt.subplot2grid((1,20), (0, 7), colspan=6)
     plot(binary_speed, xlabels, legend=["binary-256", "binary-128","binary-64"], title="Binary-Tree", plot=plt, ylabel="Serial time / Binary Tree time")
-    plt.subplot2grid((1,11), (0, 8), colspan=3)
-    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt)
+    plt.subplot2grid((1,20), (0, 14), colspan=6)
+    plot(flat_speed, xlabels, legend=["flat-256", "flat-128","flat-64"], title="Flat-Tree", plot=plt, ylabel="Serial time / Binary tree time")
 
     plt.show()
 
@@ -230,8 +362,11 @@ def get_avgs(folder):
 
 def main():
     # plot_bcast()
-    plot_reduce()
+    # plot_reduce()
     # plot_allreduce()
+    # plot_tallreduce(thrput_folder)
+    # plot_treduce(thrput_folder)
+    plot_tbcast(thrput_folder)
 
 def calc(folder, data, tasks):
     for d in data:
