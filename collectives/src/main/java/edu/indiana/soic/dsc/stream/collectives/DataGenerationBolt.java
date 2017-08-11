@@ -70,7 +70,7 @@ public class DataGenerationBolt extends BaseRichBolt {
       count++;
       if (debug && count % printInveral == 0) {
         long elapsed = (System.nanoTime() - time) / 1000000;
-        LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count + " " + elapsed);
+        LOG.info("" + context.getThisTaskId() + " Passthotugh Messagre received count: " + count + " size: " + b.length);
       }
 
       collector.emit(Constants.Fields.CHAIN_STREAM, tuple, list);

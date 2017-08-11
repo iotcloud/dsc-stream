@@ -24,6 +24,7 @@ public class MultiDataCollectionBolt extends BaseRichBolt {
   private Kryo kryo;
   private boolean passThrough = false;
   private String upperComponentName;
+  private boolean gather = false;
 
   public boolean isPassThrough() {
     return passThrough;
@@ -97,6 +98,10 @@ public class MultiDataCollectionBolt extends BaseRichBolt {
         anchors.add(t);
         arrivalTimesList.add(arrivalTimes.get(e.getKey()).poll());
         timings.add(t.getLongByField(Constants.Fields.TIME_FIELD));
+        byte []b = (byte[]) body;
+        if (debug && count % printInveral == 0) {
+          LOG.info("Size of the message: " + b.length);
+        }
       }
 
       byte []b;

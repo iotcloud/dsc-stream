@@ -44,6 +44,11 @@ public class SingleDataCollectionBolt extends BaseRichBolt {
         LOG.info(context.getThisTaskId() + " Last Received tuple: " + count);
       }
 
+      Object body = tuple.getValueByField(Constants.Fields.BODY);
+      if (debug && count / printInveral == 0) {
+        LOG.info("Size of the message: " + ((byte [])body).length);
+      }
+
       count++;
       byte []b;
       List<Object> list = new ArrayList<Object>();

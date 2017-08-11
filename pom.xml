@@ -11,6 +11,7 @@
     <modules>
         <!--<module>performance</module>-->
         <module>collectives</module>
+        <module>debs</module>
     </modules>
 
     <properties>

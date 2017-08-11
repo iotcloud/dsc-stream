@@ -15,6 +15,7 @@ public class Constants {
   public static final String ARGS_PIPE_SPLIT = "pls";
   public static final String ARGS_DEBUG = "g";
   public static final String ARGS_PRINT_INTERVAL = "pi";
+  public static final String ARGS_GATHER = "gather";
   public static final String UPPER_COMPONENT_NAME = "upperComponentName";
   public static final String PASSTHROUGH_REMOVE_BODY = "removeBody";
 
