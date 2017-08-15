@@ -1,4 +1,4 @@
-package edu.indiana.soic.dsc.stream.debs;
+package edu.indiana.soic.dsc.stream.debs.bolt;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -8,7 +8,7 @@ import backtype.storm.tuple.Tuple;
 
 import java.util.Map;
 
-public class MedianBolt extends BaseRichBolt {
+public class ReductionSerialBolt extends BaseRichBolt {
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
 

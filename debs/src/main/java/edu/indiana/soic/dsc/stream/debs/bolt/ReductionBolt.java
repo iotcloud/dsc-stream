@@ -1,4 +1,4 @@
-package edu.indiana.soic.dsc.stream.debs;
+package edu.indiana.soic.dsc.stream.debs.bolt;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
