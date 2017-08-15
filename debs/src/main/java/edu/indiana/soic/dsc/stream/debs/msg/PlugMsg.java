@@ -1,11 +1,28 @@
 package edu.indiana.soic.dsc.stream.debs.msg;
 
 public class PlugMsg {
-  private int id;
-  private float averageHourly;
-  private float averageDaily;
+  public int id;
+  public float averageHourly;
+  public float averageDaily;
+  public long hourlyStartTs;
+  public long hourlyEndTs;
+  public long dailyStartTs;
+  public long dailyEndTs;
+  public int noOfHourlyMsgs = 3600;
+  public int noOfDailyMsgs = 3600 * 24;
 
   public PlugMsg() {
+  }
+
+  public PlugMsg(int id, float averageHourly, float averageDaily,
+                 long hourlyStartTs, long hourlyEndTs, long dailyStartTs, long dailyEndTs) {
+    this.id = id;
+    this.averageHourly = averageHourly;
+    this.averageDaily = averageDaily;
+    this.hourlyStartTs = hourlyStartTs;
+    this.hourlyEndTs = hourlyEndTs;
+    this.dailyEndTs = dailyEndTs;
+    this.dailyStartTs = dailyStartTs;
   }
 
   public int getId() {
@@ -24,17 +41,19 @@ public class PlugMsg {
     this.averageHourly = averageHourly;
   }
 
-  public PlugMsg(int id, float averageHourly, float averageDaily) {
-    this.id = id;
-    this.averageHourly = averageHourly;
-    this.averageDaily = averageDaily;
-  }
-
   public float getAverageDaily() {
     return averageDaily;
   }
 
   public void setAverageDaily(float averageDaily) {
     this.averageDaily = averageDaily;
+  }
+
+  public void setNoOfHourlyMsgs(int noOfHourlyMsgs) {
+    this.noOfHourlyMsgs = noOfHourlyMsgs;
+  }
+
+  public void setNoOfDailyMsgs(int noOfDailyMsgs) {
+    this.noOfDailyMsgs = noOfDailyMsgs;
   }
 }

@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class HouseHold implements Entity {
+
   private Map<Integer, Plug> plugMap = new HashMap<>();
+
   @Override
   public void addReading(DataReading reading) {
     Plug plug = null;

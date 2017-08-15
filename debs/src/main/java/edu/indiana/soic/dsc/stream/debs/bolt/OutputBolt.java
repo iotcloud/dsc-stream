@@ -9,6 +9,8 @@ import com.twitter.heron.api.tuple.Tuple;
 import java.util.Map;
 
 public class OutputBolt extends BaseRichBolt {
+  private String fileName;
+
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext, OutputCollector outputCollector) {
 

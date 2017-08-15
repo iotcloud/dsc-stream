@@ -15,6 +15,7 @@ public class Plug implements Entity{
       throw new IllegalArgumentException();
     }
 
+    this.id = id;
     this.window1 = window1;
     this.window2 = window2;
 
@@ -24,8 +25,8 @@ public class Plug implements Entity{
 
   @Override
   public void addReading(DataReading reading) {
-    hourly.add(reading.value);
-    daily.add(reading.value);
+    hourly.add(reading.value, reading.timeStamp);
+    daily.add(reading.value, reading.timeStamp);
   }
 
   public float averageHourly() {
@@ -34,5 +35,21 @@ public class Plug implements Entity{
 
   public float averageDaily() {
     return daily.average();
+  }
+
+  public long hourlyStartTime() {
+    return hourly.getStartTime();
+  }
+
+  public long hourlyEndTime() {
+    return hourly.getEndTime();
+  }
+
+  public long dailyStartTime() {
+    return hourly.getStartTime();
+  }
+
+  public long dailyEndTime() {
+    return hourly.getEndTime();
   }
 }

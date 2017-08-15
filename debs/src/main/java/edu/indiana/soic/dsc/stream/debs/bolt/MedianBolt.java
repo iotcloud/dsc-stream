@@ -45,10 +45,14 @@ public class MedianBolt extends BaseRichBolt {
     Plug plug = house.getPlug(reading.householdId, reading.plugId);
     float averageHourly = plug.averageHourly();
     float averageDaily = plug.averageDaily();
+    long hourlyStart = plug.hourlyStartTime();
+    long hourlyEnd = plug.hourlyEndTime();
+    long dailyStart = plug.dailyStartTime();
+    long dailyEnd = plug.dailyEndTime();
 
-    List<Object> list = new ArrayList();
+    List<Object> list = new ArrayList<Object>();
     list.add(time);
-    list.add(new PlugMsg(plug.id, averageHourly, averageDaily));
+    list.add(new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart, hourlyEnd, dailyStart, dailyEnd));
 
     outputCollection.emit(Constants.PLUG_REDUCE_STREAM, list);
   }
