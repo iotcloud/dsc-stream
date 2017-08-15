@@ -8,9 +8,9 @@ import com.twitter.heron.api.tuple.Tuple;
 
 import java.util.Map;
 
-public class ReductionSerialBolt extends BaseRichBolt {
+public class OutputBolt extends BaseRichBolt {
   @Override
-  public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+  public void prepare(Map<String, Object> map, TopologyContext topologyContext, OutputCollector outputCollector) {
 
   }
 

@@ -3,10 +3,10 @@ package edu.indiana.soic.dsc.stream.debs.model;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
 
 public class Plug implements Entity{
-  int id;
+  public int id;
 
-  CircularArray hourly;
-  CircularArray daily;
+  public CircularArray hourly;
+  public CircularArray daily;
 
   int window1, window2;
 

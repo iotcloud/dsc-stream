@@ -1,16 +1,16 @@
 package edu.indiana.soic.dsc.stream.debs.bolt;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Tuple;
+import com.twitter.heron.api.bolt.BaseRichBolt;
+import com.twitter.heron.api.bolt.OutputCollector;
+import com.twitter.heron.api.topology.OutputFieldsDeclarer;
+import com.twitter.heron.api.topology.TopologyContext;
+import com.twitter.heron.api.tuple.Tuple;
 
 import java.util.Map;
 
 public class ReductionBolt extends BaseRichBolt {
   @Override
-  public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+  public void prepare(Map<String, Object> map, TopologyContext topologyContext, OutputCollector outputCollector) {
 
   }
 

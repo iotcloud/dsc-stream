@@ -1,30 +1,36 @@
 package edu.indiana.soic.dsc.stream.debs.bolt;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
+import com.twitter.heron.api.bolt.BaseRichBolt;
+import com.twitter.heron.api.bolt.OutputCollector;
+import com.twitter.heron.api.topology.OutputFieldsDeclarer;
+import com.twitter.heron.api.topology.TopologyContext;
+import com.twitter.heron.api.tuple.Fields;
+import com.twitter.heron.api.tuple.Tuple;
 import edu.indiana.soic.dsc.stream.debs.Constants;
 import edu.indiana.soic.dsc.stream.debs.model.House;
 import edu.indiana.soic.dsc.stream.debs.model.Plug;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
+import edu.indiana.soic.dsc.stream.debs.msg.PlugMsg;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MedianBolt extends BaseRichBolt {
   Map<Integer, House> plugToHouse = new HashMap<>();
+  OutputCollector outputCollection;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
-
+    this.outputCollection = outputCollector;
   }
 
   @Override
   public void execute(Tuple tuple) {
     Object input = tuple.getValueByField(Constants.DATA_FIELD);
+    Object time = tuple.getValueByField(Constants.TIME_FIELD);
+
     DataReading reading = (DataReading) input;
 
     House house;
@@ -37,10 +43,14 @@ public class MedianBolt extends BaseRichBolt {
     house.addReading(reading);
 
     Plug plug = house.getPlug(reading.householdId, reading.plugId);
-    double averageHourly = plug.averageHourly();
-    double averageDaily = plug.averageDaily();
+    float averageHourly = plug.averageHourly();
+    float averageDaily = plug.averageDaily();
 
+    List<Object> list = new ArrayList();
+    list.add(time);
+    list.add(new PlugMsg(plug.id, averageHourly, averageDaily));
 
+    outputCollection.emit(Constants.PLUG_REDUCE_STREAM, list);
   }
 
   @Override
