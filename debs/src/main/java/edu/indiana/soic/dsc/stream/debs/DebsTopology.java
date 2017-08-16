@@ -107,10 +107,8 @@ public class DebsTopology {
   private static void buildReduceSerialTopology(TopologyBuilder builder, int medianParallel,
                                                 int spoutParallel, int reductionParallel, Config conf) {
     BaseRichSpout dataSpout;
-    BaseRichBolt valueSendBolt;
 
     dataSpout = new FileReadingSpout();
-    valueSendBolt = new OutputBolt();
     MedianBolt medianBolt = new MedianBolt();
     ReductionFunction reductionFunction = new ReductionFunction();
     ReductionBolt reductionBolt = new ReductionBolt();
@@ -122,13 +120,9 @@ public class DebsTopology {
     builder.setBolt(Constants.REDUCTION_BOLT, reductionBolt, reductionParallel).
         allReduceGrouping(Constants.MEDIAN_BOLT, Constants.PLUG_REDUCE_STREAM, reductionFunction);
 
-    builder.setBolt(Constants.TOPOLOGY_FILE_WRITE_BOLT, valueSendBolt, 1).
-        shuffleGrouping(Constants.REDUCTION_BOLT);
-
     conf.setComponentRam(Constants.TOPOLOGY_FILE_READ_SPOUT, ByteAmount.fromMegabytes(megabytes));
     conf.setComponentRam(Constants.MEDIAN_BOLT, ByteAmount.fromMegabytes(megabytes));
     conf.setComponentRam(Constants.REDUCTION_BOLT, ByteAmount.fromMegabytes(megabytes));
-    conf.setComponentRam(Constants.TOPOLOGY_FILE_WRITE_BOLT, ByteAmount.fromMegabytes(megabytes));
   }
 
   public static Option createOption(String opt, boolean hasArg, String description, boolean required) {

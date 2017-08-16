@@ -1,10 +1,12 @@
 package edu.indiana.soic.dsc.stream.debs.bolt;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.twitter.heron.api.bolt.IOutputCollector;
 import com.twitter.heron.api.grouping.IReduce;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Tuple;
 import edu.indiana.soic.dsc.stream.debs.Constants;
+import edu.indiana.soic.dsc.stream.debs.DebsUtils;
 import edu.indiana.soic.dsc.stream.debs.msg.PlugMsg;
 
 import java.util.*;
@@ -15,18 +17,51 @@ public class ReductionFunction implements IReduce {
 
   private int thisTaskId;
 
-  // tasId, <plugId, PlugMsg>
-  private Map<Integer, Map<Integer, TaskPlugMessages>> plugMessages = new HashMap<>();
+  private Kryo kryo;
 
-  private Long currentEndTIme;
+  private class PlugKey {
+    boolean aggregate;
+    int id;
+
+    public PlugKey(boolean aggregate, int id) {
+      this.aggregate = aggregate;
+      this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      PlugKey plugKey = (PlugKey) o;
+
+      if (aggregate != plugKey.aggregate) return false;
+      return id == plugKey.id;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = (aggregate ? 1 : 0);
+      result = 31 * result + id;
+      return result;
+    }
+  }
+
+  // tasId, <plugId, PlugMsg>
+  private Map<Integer, Map<PlugKey, TaskPlugMessages>> plugMessages = new HashMap<>();
+  private IOutputCollector outputCollector;
 
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext,
                       List<Integer> list, IOutputCollector iOutputCollector) {
     thisTaskId = topologyContext.getThisTaskId();
     for (int i : list) {
-      plugMessages.put(i, new HashMap<Integer, TaskPlugMessages>());
+      plugMessages.put(i, new HashMap<PlugKey, TaskPlugMessages>());
     }
+    this.outputCollector = iOutputCollector;
+    this.kryo = new Kryo();
+    DebsUtils.registerClasses(kryo);
   }
 
   @Override
@@ -35,12 +70,13 @@ public class ReductionFunction implements IReduce {
     Object time = tuple.getValueByField(Constants.TIME_FIELD);
 
     PlugMsg plugMsg = (PlugMsg) object;
-    Map<Integer, TaskPlugMessages> plugMessagesForTask = plugMessages.get(i);
+    Map<PlugKey, TaskPlugMessages> plugMessagesForTask = plugMessages.get(i);
 
-    TaskPlugMessages taskPlugMessages = plugMessagesForTask.get(plugMsg.id);
+    PlugKey key = new PlugKey(plugMsg.aggregate, plugMsg.id);
+    TaskPlugMessages taskPlugMessages = plugMessagesForTask.get(key);
     if (taskPlugMessages == null) {
       taskPlugMessages = new TaskPlugMessages();
-      plugMessagesForTask.put(plugMsg.id, taskPlugMessages);
+      plugMessagesForTask.put(key, taskPlugMessages);
     }
 
     taskPlugMessages.endTimes.add(plugMsg.dailyEndTs);
@@ -64,14 +100,21 @@ public class ReductionFunction implements IReduce {
     }
 
     if (state == State.GOOD) {
-      reduceMessages();
+      PlugMsg plugMsg = reduceMessages();
+      byte[] b = DebsUtils.serialize(kryo, plugMsg);
+
+      List<Object> emit = new ArrayList<>();
+      emit.add(System.nanoTime());
+      emit.add(b);
+
+      outputCollector.emit(Constants.PLUG_REDUCE_STREAM, new ArrayList<Tuple>(), emit);
     }
   }
 
   private void removeOld() {
     List<Long> values = new ArrayList<>();
-    for (Map.Entry<Integer, Map<Integer, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      for (Map.Entry<Integer, TaskPlugMessages> te : e.getValue().entrySet()) {
+    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
+      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
         TaskPlugMessages tpm = te.getValue();
 
         values.add(tpm.endTimes.get(0));
@@ -80,8 +123,8 @@ public class ReductionFunction implements IReduce {
 
     Collections.sort(values);
     long largest = values.get(values.size() - 1);
-    for (Map.Entry<Integer, Map<Integer, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      for (Map.Entry<Integer, TaskPlugMessages> te : e.getValue().entrySet()) {
+    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
+      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
         TaskPlugMessages tpm = te.getValue();
 
         if (tpm.endTimes.get(0) != largest) {
@@ -92,14 +135,14 @@ public class ReductionFunction implements IReduce {
   }
 
   private State checkState() {
-    for (Map.Entry<Integer, Map<Integer, TaskPlugMessages>> e : plugMessages.entrySet()) {
+    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
       long endTime = -1;
 
       if (e.getValue().size() <= 0) {
         return State.WAITING;
       }
 
-      for (Map.Entry<Integer, TaskPlugMessages> te : e.getValue().entrySet()) {
+      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
         TaskPlugMessages tpm = te.getValue();
 
         if (tpm.endTimes.size() < 2) {
@@ -122,8 +165,8 @@ public class ReductionFunction implements IReduce {
   private PlugMsg reduceMessages() {
     PlugMsg aggrPlugMsg = new PlugMsg();
 
-    for (Map.Entry<Integer, Map<Integer, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      for (Map.Entry<Integer, TaskPlugMessages> te : e.getValue().entrySet()) {
+    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
+      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
         TaskPlugMessages tpm = te.getValue();
         PlugMsg plugMsg = tpm.plugMsgs.get(0);
 
@@ -136,7 +179,7 @@ public class ReductionFunction implements IReduce {
         aggrPlugMsg.hourlyStartTs = plugMsg.hourlyStartTs;
       }
     }
-
+    aggrPlugMsg.aggregate = true;
     aggrPlugMsg.id = thisTaskId;
 
     return aggrPlugMsg;
