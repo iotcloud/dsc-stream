@@ -1,5 +1,6 @@
 package edu.indiana.soic.dsc.stream.debs.spout;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 import com.twitter.heron.api.spout.BaseRichSpout;
 import com.twitter.heron.api.spout.SpoutOutputCollector;
@@ -31,6 +32,8 @@ public class FileReadingSpout extends BaseRichSpout {
 
   private SpoutOutputCollector outputCollector;
 
+  private Kryo kryo;
+
   @Override
   public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
     String componentId = topologyContext.getThisComponentId();
@@ -40,6 +43,7 @@ public class FileReadingSpout extends BaseRichSpout {
     fileName = (String) map.get(Constants.ARGS_IN_FILE);
     this.outputCollector = spoutOutputCollector;
     openFile(fileName);
+    kryo = new Kryo();
   }
 
   @Override

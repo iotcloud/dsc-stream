@@ -1,5 +1,7 @@
 package edu.indiana.soic.dsc.stream.debs.msg;
 
+import java.util.ArrayList;
+
 public class PlugMsg {
   public int id;
   public float averageHourly;
@@ -10,12 +12,14 @@ public class PlugMsg {
   public long dailyEndTs;
   public int noOfHourlyMsgs = 3600;
   public int noOfDailyMsgs = 3600 * 24;
+  public ArrayList<Integer> aggregatedPlugs = new ArrayList<>();
 
   public PlugMsg() {
   }
 
   public PlugMsg(int id, float averageHourly, float averageDaily,
-                 long hourlyStartTs, long hourlyEndTs, long dailyStartTs, long dailyEndTs) {
+                 long hourlyStartTs, long hourlyEndTs, long dailyStartTs, long dailyEndTs,
+                 ArrayList<Integer> aggregatedPlugs) {
     this.id = id;
     this.averageHourly = averageHourly;
     this.averageDaily = averageDaily;
@@ -23,6 +27,7 @@ public class PlugMsg {
     this.hourlyEndTs = hourlyEndTs;
     this.dailyEndTs = dailyEndTs;
     this.dailyStartTs = dailyStartTs;
+    this.aggregatedPlugs = aggregatedPlugs;
   }
 
   public int getId() {

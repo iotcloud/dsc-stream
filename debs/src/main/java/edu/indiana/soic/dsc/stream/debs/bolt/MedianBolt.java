@@ -1,5 +1,6 @@
 package edu.indiana.soic.dsc.stream.debs.bolt;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.bolt.OutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
@@ -7,6 +8,7 @@ import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
 import edu.indiana.soic.dsc.stream.debs.Constants;
+import edu.indiana.soic.dsc.stream.debs.DebsUtils;
 import edu.indiana.soic.dsc.stream.debs.model.House;
 import edu.indiana.soic.dsc.stream.debs.model.Plug;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
@@ -18,12 +20,15 @@ import java.util.List;
 import java.util.Map;
 
 public class MedianBolt extends BaseRichBolt {
-  Map<Integer, House> plugToHouse = new HashMap<>();
-  OutputCollector outputCollection;
+  private Map<Integer, House> plugToHouse = new HashMap<>();
+  private OutputCollector outputCollection;
+  private Kryo kryo;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
     this.outputCollection = outputCollector;
+    kryo = new Kryo();
+    DebsUtils.registerClasses(kryo);
   }
 
   @Override
@@ -49,10 +54,14 @@ public class MedianBolt extends BaseRichBolt {
     long hourlyEnd = plug.hourlyEndTime();
     long dailyStart = plug.dailyStartTime();
     long dailyEnd = plug.dailyEndTime();
+    ArrayList<Integer> aggrs = new ArrayList<>();
+    aggrs.add(reading.plugId);
 
-    List<Object> list = new ArrayList<Object>();
+    ArrayList<Object> list = new ArrayList<Object>();
     list.add(time);
-    list.add(new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart, hourlyEnd, dailyStart, dailyEnd));
+    PlugMsg plugMsg = new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart, hourlyEnd, dailyStart, dailyEnd, aggrs);
+    byte[] b = DebsUtils.serialize(kryo, plugMsg);
+    list.add(b);
 
     outputCollection.emit(Constants.PLUG_REDUCE_STREAM, list);
   }

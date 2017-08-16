@@ -9,6 +9,7 @@ public abstract class Constants {
   public static final String DATA_FIELD = "data_field";
   public static final String HOUSE_PLUG_FIELD = "house_plug_field";
   public static final String PLUG_ID_FILED = "plug_id_field";
+  public static final String OUT_FILED = "out_field";
 
   public static final String ARGS_NAME = "name";
   public static final String ARGS_IN_FILE = "if";

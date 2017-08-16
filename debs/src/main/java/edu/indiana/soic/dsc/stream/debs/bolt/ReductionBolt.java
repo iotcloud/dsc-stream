@@ -4,7 +4,9 @@ import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.bolt.OutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
+import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
+import edu.indiana.soic.dsc.stream.debs.Constants;
 
 import java.util.Map;
 
@@ -21,6 +23,6 @@ public class ReductionBolt extends BaseRichBolt {
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-
+    outputFieldsDeclarer.declare(new Fields(Constants.OUT_FILED));
   }
 }
