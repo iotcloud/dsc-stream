@@ -13,7 +13,6 @@ public class PlugMsg {
   public int noOfHourlyMsgs = 3600;
   public int noOfDailyMsgs = 3600 * 24;
   public ArrayList<Integer> aggregatedPlugs = new ArrayList<>();
-  public boolean aggregate = false;
 
   public PlugMsg() {
   }

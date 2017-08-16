@@ -4,15 +4,17 @@ import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.bolt.OutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
-import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.api.tuple.Tuple;
 import edu.indiana.soic.dsc.stream.debs.Constants;
-import edu.indiana.soic.dsc.stream.debs.msg.OutputMessage;
+import edu.indiana.soic.dsc.stream.debs.msg.PlugMsg;
 
 import java.io.*;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class ReductionBolt extends BaseRichBolt {
+  private static Logger LOG = Logger.getLogger(ReductionBolt.class.getName());
+
   private String fileName;
 
   PrintWriter hourlyBufferWriter;
@@ -27,15 +29,9 @@ public class ReductionBolt extends BaseRichBolt {
   @Override
   public void execute(Tuple tuple) {
     Object output = tuple.getValueByField(Constants.OUT_FILED);
-    OutputMessage msg = (OutputMessage) output;
+    PlugMsg msg = (PlugMsg) output;
 
-    if (msg.daily) {
-      dailyBufferWriter.println(msg.toString());
-      dailyBufferWriter.flush();
-    } else {
-      hourlyBufferWriter.println(msg.toString());
-      hourlyBufferWriter.flush();
-    }
+    LOG.info(msg.averageDaily + "," + msg.averageHourly + ", " + msg.aggregatedPlugs.size());
   }
 
   private void openFile(String openFile) {

@@ -14,21 +14,29 @@ import edu.indiana.soic.dsc.stream.debs.model.Plug;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
 import edu.indiana.soic.dsc.stream.debs.msg.PlugMsg;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Logger;
 
 public class MedianBolt extends BaseRichBolt {
+  private static Logger LOG = Logger.getLogger(MedianBolt.class.getName());
+
   private Map<Integer, House> plugToHouse = new HashMap<>();
-  private OutputCollector outputCollection;
+
+  private OutputCollector outputCollector;
+
   private Kryo kryo;
+  
+  private int thisTaskId;
+
+  // plugid, plugmessage
+  private Map<Integer, PlugsMessages> plugMsgs = new HashMap<>();
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
-    this.outputCollection = outputCollector;
+    this.outputCollector = outputCollector;
     kryo = new Kryo();
     DebsUtils.registerClasses(kryo);
+    thisTaskId = topologyContext.getThisTaskId();
   }
 
   @Override
@@ -36,7 +44,7 @@ public class MedianBolt extends BaseRichBolt {
     Object input = tuple.getValueByField(Constants.DATA_FIELD);
     Object time = tuple.getValueByField(Constants.TIME_FIELD);
 
-    DataReading reading = (DataReading) input;
+    DataReading reading = (DataReading) DebsUtils.deSerialize(kryo, (byte [])input, DataReading.class);
 
     House house;
     if (plugToHouse.containsKey(reading.houseId)) {
@@ -48,6 +56,19 @@ public class MedianBolt extends BaseRichBolt {
     house.addReading(reading);
 
     Plug plug = house.getPlug(reading.householdId, reading.plugId);
+    PlugMsg plugMsg = createPlugMsg(reading, plug);
+
+    PlugsMessages plugsMessages = plugMsgs.get(plug.id);
+    if (plugsMessages == null) {
+      plugsMessages = new PlugsMessages();
+      plugMsgs.put(plug.id, plugsMessages);
+    }
+    plugsMessages.add((Long) time, plugMsg.dailyEndTs, plugMsg);
+
+    processTaskPlugMessages();
+  }
+
+  private PlugMsg createPlugMsg(DataReading reading, Plug plug) {
     float averageHourly = plug.averageHourly();
     float averageDaily = plug.averageDaily();
     long hourlyStart = plug.hourlyStartTime();
@@ -57,13 +78,7 @@ public class MedianBolt extends BaseRichBolt {
     ArrayList<Integer> aggrs = new ArrayList<>();
     aggrs.add(reading.plugId);
 
-    ArrayList<Object> list = new ArrayList<Object>();
-    list.add(time);
-    PlugMsg plugMsg = new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart, hourlyEnd, dailyStart, dailyEnd, aggrs);
-    byte[] b = DebsUtils.serialize(kryo, plugMsg);
-    list.add(b);
-
-    outputCollection.emit(Constants.PLUG_REDUCE_STREAM, list);
+    return new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart, hourlyEnd, dailyStart, dailyEnd, aggrs);
   }
 
   @Override
@@ -73,5 +88,100 @@ public class MedianBolt extends BaseRichBolt {
 
     outputFieldsDeclarer.declareStream(Constants.HOUSE_REDUCE_STREAM,
         new Fields(Constants.TIME_FIELD, Constants.HOUSE_PLUG_FIELD));
+  }
+
+  private class PlugsMessages {
+    List<Long> times = new ArrayList<>();
+    List<Long> endTimes = new ArrayList<>();
+    List<PlugMsg> plugReadings = new ArrayList<>();
+
+    void add(Long time, Long endTime, PlugMsg msg) {
+      times.add(time);
+      endTimes.add(endTime);
+      plugReadings.add(msg);
+    }
+
+    void removeFirst() {
+      times.remove(0);
+      endTimes.remove(0);
+      plugReadings.remove(0);
+    }
+  }
+
+  private void processTaskPlugMessages() {
+    MessageState state = checkState();
+    while (state == MessageState.NUMBER_MISMATCH) {
+      removeOld();
+      state = checkState();
+    }
+
+    if (state == MessageState.GOOD) {
+      PlugMsg plugMsg = reduceMessages();
+      byte[] b = DebsUtils.serialize(kryo, plugMsg);
+
+      List<Object> emit = new ArrayList<>();
+      emit.add(System.nanoTime());
+      emit.add(b);
+
+      outputCollector.emit(Constants.PLUG_REDUCE_STREAM, new ArrayList<Tuple>(), emit);
+    }
+  }
+
+  private void removeOld() {
+    List<Long> values = new ArrayList<>();
+    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+        PlugsMessages tpm = e.getValue();
+        values.add(tpm.endTimes.get(0));
+    }
+
+    Collections.sort(values);
+    long largest = values.get(values.size() - 1);
+    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+      PlugsMessages tpm = e.getValue();
+      if (tpm.endTimes.get(0) != largest) {
+        tpm.removeFirst();
+      }
+    }
+  }
+
+  private MessageState checkState() {
+    long endTime = -1;
+    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+      PlugsMessages tpm = e.getValue();
+
+      if (tpm.endTimes.size() < 2) {
+        return MessageState.WAITING;
+      }
+
+      if (endTime < 0) {
+        endTime = tpm.endTimes.get(0);
+      } else {
+        if (endTime != tpm.endTimes.get(0)) {
+          LOG.warning("End times are not equal");
+          return MessageState.NUMBER_MISMATCH;
+        }
+      }
+    }
+    return MessageState.GOOD;
+  }
+
+  private PlugMsg reduceMessages() {
+    PlugMsg aggrPlugMsg = new PlugMsg();
+
+    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+      PlugsMessages tpm = e.getValue();
+      PlugMsg plugMsg = tpm.plugReadings.get(0);
+
+      aggrPlugMsg.aggregatedPlugs.addAll(plugMsg.aggregatedPlugs);
+      aggrPlugMsg.averageDaily += plugMsg.averageDaily;
+      aggrPlugMsg.averageHourly += plugMsg.averageHourly;
+      aggrPlugMsg.dailyEndTs = plugMsg.dailyEndTs;
+      aggrPlugMsg.dailyStartTs = plugMsg.dailyStartTs;
+      aggrPlugMsg.hourlyEndTs = plugMsg.hourlyEndTs;
+      aggrPlugMsg.hourlyStartTs = plugMsg.hourlyStartTs;
+    }
+    aggrPlugMsg.id = thisTaskId;
+
+    return aggrPlugMsg;
   }
 }

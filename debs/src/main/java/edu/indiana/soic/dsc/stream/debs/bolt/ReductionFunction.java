@@ -19,37 +19,8 @@ public class ReductionFunction implements IReduce {
 
   private Kryo kryo;
 
-  private class PlugKey {
-    boolean aggregate;
-    int id;
-
-    public PlugKey(boolean aggregate, int id) {
-      this.aggregate = aggregate;
-      this.id = id;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-
-      PlugKey plugKey = (PlugKey) o;
-
-      if (aggregate != plugKey.aggregate) return false;
-      return id == plugKey.id;
-
-    }
-
-    @Override
-    public int hashCode() {
-      int result = (aggregate ? 1 : 0);
-      result = 31 * result + id;
-      return result;
-    }
-  }
-
   // tasId, <plugId, PlugMsg>
-  private Map<Integer, Map<PlugKey, TaskPlugMessages>> plugMessages = new HashMap<>();
+  private Map<Integer, TaskPlugMessages> plugMessages = new HashMap<>();
   private IOutputCollector outputCollector;
 
   @Override
@@ -57,7 +28,7 @@ public class ReductionFunction implements IReduce {
                       List<Integer> list, IOutputCollector iOutputCollector) {
     thisTaskId = topologyContext.getThisTaskId();
     for (int i : list) {
-      plugMessages.put(i, new HashMap<PlugKey, TaskPlugMessages>());
+      plugMessages.put(i, new TaskPlugMessages());
     }
     this.outputCollector = iOutputCollector;
     this.kryo = new Kryo();
@@ -69,15 +40,8 @@ public class ReductionFunction implements IReduce {
     Object object = tuple.getValueByField(Constants.PLUG_FIELD);
     Object time = tuple.getValueByField(Constants.TIME_FIELD);
 
-    PlugMsg plugMsg = (PlugMsg) object;
-    Map<PlugKey, TaskPlugMessages> plugMessagesForTask = plugMessages.get(i);
-
-    PlugKey key = new PlugKey(plugMsg.aggregate, plugMsg.id);
-    TaskPlugMessages taskPlugMessages = plugMessagesForTask.get(key);
-    if (taskPlugMessages == null) {
-      taskPlugMessages = new TaskPlugMessages();
-      plugMessagesForTask.put(key, taskPlugMessages);
-    }
+    PlugMsg plugMsg = (PlugMsg) DebsUtils.deSerialize(kryo, (byte [])object, PlugMsg.class);
+    TaskPlugMessages taskPlugMessages = plugMessages.get(i);
 
     taskPlugMessages.endTimes.add(plugMsg.dailyEndTs);
     taskPlugMessages.plugMsgs.add(plugMsg);
@@ -86,20 +50,14 @@ public class ReductionFunction implements IReduce {
     processTaskPlugMessages();
   }
 
-  private enum State {
-    GOOD,
-    NUMBER_MISMATCH,
-    WAITING,
-  }
-
   private void processTaskPlugMessages() {
-    State state = checkState();
-    while (state == State.NUMBER_MISMATCH) {
+    MessageState state = checkState();
+    while (state == MessageState.NUMBER_MISMATCH) {
       removeOld();
       state = checkState();
     }
 
-    if (state == State.GOOD) {
+    if (state == MessageState.GOOD) {
       PlugMsg plugMsg = reduceMessages();
       byte[] b = DebsUtils.serialize(kryo, plugMsg);
 
@@ -113,73 +71,58 @@ public class ReductionFunction implements IReduce {
 
   private void removeOld() {
     List<Long> values = new ArrayList<>();
-    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
-        TaskPlugMessages tpm = te.getValue();
-
-        values.add(tpm.endTimes.get(0));
-      }
+    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
+      TaskPlugMessages tpm = e.getValue();
+      values.add(tpm.endTimes.get(0));
     }
 
     Collections.sort(values);
     long largest = values.get(values.size() - 1);
-    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
-        TaskPlugMessages tpm = te.getValue();
+    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
+      TaskPlugMessages tpm = e.getValue();
 
-        if (tpm.endTimes.get(0) != largest) {
-          tpm.removeFirst();
-        }
+      if (tpm.endTimes.get(0) != largest) {
+        tpm.removeFirst();
       }
     }
   }
 
-  private State checkState() {
-    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      long endTime = -1;
+  private MessageState checkState() {
+    long endTime = -1;
+    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
+      TaskPlugMessages tpm = e.getValue();
 
-      if (e.getValue().size() <= 0) {
-        return State.WAITING;
+      if (tpm.endTimes.size() < 2) {
+        return MessageState.WAITING;
       }
 
-      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
-        TaskPlugMessages tpm = te.getValue();
-
-        if (tpm.endTimes.size() < 2) {
-          return State.WAITING;
-        }
-
-        if (endTime < 0) {
-          endTime = tpm.endTimes.get(0);
-        } else {
-          if (endTime != tpm.endTimes.get(0)) {
-            LOG.warning("End times are not equal");
-            return State.NUMBER_MISMATCH;
-          }
+      if (endTime < 0) {
+        endTime = tpm.endTimes.get(0);
+      } else {
+        if (endTime != tpm.endTimes.get(0)) {
+          LOG.warning("End times are not equal");
+          return MessageState.NUMBER_MISMATCH;
         }
       }
     }
-    return State.GOOD;
+    return MessageState.GOOD;
   }
 
   private PlugMsg reduceMessages() {
     PlugMsg aggrPlugMsg = new PlugMsg();
 
-    for (Map.Entry<Integer, Map<PlugKey, TaskPlugMessages>> e : plugMessages.entrySet()) {
-      for (Map.Entry<PlugKey, TaskPlugMessages> te : e.getValue().entrySet()) {
-        TaskPlugMessages tpm = te.getValue();
-        PlugMsg plugMsg = tpm.plugMsgs.get(0);
+    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
+      TaskPlugMessages tpm = e.getValue();
+      PlugMsg plugMsg = tpm.plugMsgs.get(0);
 
-        aggrPlugMsg.aggregatedPlugs.addAll(plugMsg.aggregatedPlugs);
-        aggrPlugMsg.averageDaily += plugMsg.averageDaily;
-        aggrPlugMsg.averageHourly += plugMsg.averageHourly;
-        aggrPlugMsg.dailyEndTs = plugMsg.dailyEndTs;
-        aggrPlugMsg.dailyStartTs = plugMsg.dailyStartTs;
-        aggrPlugMsg.hourlyEndTs = plugMsg.hourlyEndTs;
-        aggrPlugMsg.hourlyStartTs = plugMsg.hourlyStartTs;
-      }
+      aggrPlugMsg.aggregatedPlugs.addAll(plugMsg.aggregatedPlugs);
+      aggrPlugMsg.averageDaily += plugMsg.averageDaily;
+      aggrPlugMsg.averageHourly += plugMsg.averageHourly;
+      aggrPlugMsg.dailyEndTs = plugMsg.dailyEndTs;
+      aggrPlugMsg.dailyStartTs = plugMsg.dailyStartTs;
+      aggrPlugMsg.hourlyEndTs = plugMsg.hourlyEndTs;
+      aggrPlugMsg.hourlyStartTs = plugMsg.hourlyStartTs;
     }
-    aggrPlugMsg.aggregate = true;
     aggrPlugMsg.id = thisTaskId;
 
     return aggrPlugMsg;

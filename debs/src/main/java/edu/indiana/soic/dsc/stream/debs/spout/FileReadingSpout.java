@@ -1,13 +1,13 @@
 package edu.indiana.soic.dsc.stream.debs.spout;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 import com.twitter.heron.api.spout.BaseRichSpout;
 import com.twitter.heron.api.spout.SpoutOutputCollector;
 import com.twitter.heron.api.topology.OutputFieldsDeclarer;
 import com.twitter.heron.api.topology.TopologyContext;
 import com.twitter.heron.api.tuple.Fields;
 import edu.indiana.soic.dsc.stream.debs.Constants;
+import edu.indiana.soic.dsc.stream.debs.DebsUtils;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
 
 import java.io.BufferedReader;
@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -34,6 +35,8 @@ public class FileReadingSpout extends BaseRichSpout {
 
   private Kryo kryo;
 
+  private Map<Integer, Integer> taskIdToIndex = new HashMap<>();
+
   @Override
   public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
     String componentId = topologyContext.getThisComponentId();
@@ -44,6 +47,10 @@ public class FileReadingSpout extends BaseRichSpout {
     this.outputCollector = spoutOutputCollector;
     openFile(fileName);
     kryo = new Kryo();
+    DebsUtils.registerClasses(kryo);
+    for (int i = 0; i < taskIds.size(); i++) {
+      taskIdToIndex.put(taskId, i);
+    }
   }
 
   @Override
@@ -60,9 +67,10 @@ public class FileReadingSpout extends BaseRichSpout {
         if (reading == null) {
           continue;
         } else {
-          List<Object> emit = new ArrayList();
+          List<Object> emit = new ArrayList<Object>();
           emit.add(System.nanoTime());
-          emit.add(reading);
+          byte b[] = DebsUtils.serialize(kryo, reading);
+          emit.add(b);
 
           outputCollector.emit(emit);
         }
@@ -85,7 +93,7 @@ public class FileReadingSpout extends BaseRichSpout {
     int houseHoldId = Integer.parseInt(splits[5]);
     int houseId = Integer.parseInt(splits[6]);
 
-    if (plugId % noOfTasks == taskId) {
+    if (plugId % noOfTasks == taskIdToIndex.get(taskId)) {
       return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
     }
     return null;
