@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 public class MedianBolt extends BaseRichBolt {
   private static Logger LOG = Logger.getLogger(MedianBolt.class.getName());
 
-  private Map<Integer, House> plugToHouse = new HashMap<>();
+  private Map<Integer, House> plugToHouse;
 
   private OutputCollector outputCollector;
 
@@ -29,10 +29,12 @@ public class MedianBolt extends BaseRichBolt {
   private int thisTaskId;
 
   // plugid, plugmessage
-  private Map<Integer, PlugsMessages> plugMsgs = new HashMap<>();
+  private Map<Integer, PlugsMessages> plugMsgs;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+    plugToHouse = new HashMap<>();
+    plugMsgs = new HashMap<>();
     this.outputCollector = outputCollector;
     kryo = new Kryo();
     DebsUtils.registerClasses(kryo);

@@ -37,6 +37,10 @@ public class FileReadingSpout extends BaseRichSpout {
 
   private Map<Integer, Integer> taskIdToIndex = new HashMap<>();
 
+  private int maxPlugs;
+
+  private List<Integer> plugIdsConsidered = new ArrayList<>();
+
   @Override
   public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
     String componentId = topologyContext.getThisComponentId();
@@ -47,6 +51,7 @@ public class FileReadingSpout extends BaseRichSpout {
     this.outputCollector = spoutOutputCollector;
     openFile(fileName);
     kryo = new Kryo();
+    maxPlugs = (int) map.get(Constants.ARGS_MAX_PLUGS);
     DebsUtils.registerClasses(kryo);
     for (int i = 0; i < taskIds.size(); i++) {
       taskIdToIndex.put(taskId, i);
@@ -71,6 +76,7 @@ public class FileReadingSpout extends BaseRichSpout {
           emit.add(System.nanoTime());
           byte b[] = DebsUtils.serialize(kryo, reading);
           emit.add(b);
+          emit.add(reading.plugId);
 
           outputCollector.emit(emit);
         }
@@ -94,7 +100,18 @@ public class FileReadingSpout extends BaseRichSpout {
     int houseId = Integer.parseInt(splits[6]);
 
     if (plugId % noOfTasks == taskIdToIndex.get(taskId)) {
-      return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
+      if (maxPlugs > 0) {
+        if (plugIdsConsidered.size() >= maxPlugs) {
+          if (plugIdsConsidered.contains(plugId)) {
+            return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
+          }
+        } else {
+          plugIdsConsidered.add(plugId);
+          return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
+        }
+      } else {
+        return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
+      }
     }
     return null;
   }

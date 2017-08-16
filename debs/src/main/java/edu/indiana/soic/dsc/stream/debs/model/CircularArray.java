@@ -1,6 +1,10 @@
 package edu.indiana.soic.dsc.stream.debs.model;
 
+import java.util.logging.Logger;
+
 public class CircularArray {
+  private static Logger LOG = Logger.getLogger(CircularArray.class.getName());
+
   float values[];
   long times[];
 
@@ -13,7 +17,9 @@ public class CircularArray {
     this.capacity = capacity;
     this.head = 0;
     this.filledAmount = 0;
+    LOG.info("Creating circular array of size: " + capacity);
     this.values = new float[capacity];
+    this.times = new long[capacity];
   }
 
   public void add(float val, long time) {

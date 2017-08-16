@@ -15,6 +15,7 @@ public abstract class Constants {
   public static final String ARGS_IN_FILE = "if";
   public static final String ARGS_OUT_FILE = "of";
   public static final String ARGS_PARALLEL = "p";
+  public static final String ARGS_MAX_PLUGS = "maxPlugs";
 
   public static final String ARGS_STREAM_MGRS = "stmgr";
   public static final String ARGS_DEBUG = "g";

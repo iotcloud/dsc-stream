@@ -13,20 +13,21 @@ import java.util.*;
 import java.util.logging.Logger;
 
 public class ReductionFunction implements IReduce {
-  private Logger LOG = Logger.getLogger(ReductionFunction.class.getName());
+  private static Logger LOG = Logger.getLogger(ReductionFunction.class.getName());
 
   private int thisTaskId;
 
   private Kryo kryo;
 
   // tasId, <plugId, PlugMsg>
-  private Map<Integer, TaskPlugMessages> plugMessages = new HashMap<>();
+  private Map<Integer, TaskPlugMessages> plugMessages;
   private IOutputCollector outputCollector;
 
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext,
                       List<Integer> list, IOutputCollector iOutputCollector) {
     thisTaskId = topologyContext.getThisTaskId();
+    plugMessages = new HashMap<>();
     for (int i : list) {
       plugMessages.put(i, new TaskPlugMessages());
     }

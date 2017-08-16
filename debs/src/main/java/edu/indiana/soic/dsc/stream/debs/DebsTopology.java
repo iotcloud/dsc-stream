@@ -2,7 +2,6 @@ package edu.indiana.soic.dsc.stream.debs;
 
 import com.twitter.heron.api.Config;
 import com.twitter.heron.api.HeronSubmitter;
-import com.twitter.heron.api.bolt.BaseRichBolt;
 import com.twitter.heron.api.exception.AlreadyAliveException;
 import com.twitter.heron.api.exception.InvalidTopologyException;
 import com.twitter.heron.api.spout.BaseRichSpout;
@@ -11,7 +10,6 @@ import com.twitter.heron.api.tuple.Fields;
 import com.twitter.heron.common.basics.ByteAmount;
 import com.twitter.heron.simulator.Simulator;
 import edu.indiana.soic.dsc.stream.debs.bolt.MedianBolt;
-import edu.indiana.soic.dsc.stream.debs.bolt.OutputBolt;
 import edu.indiana.soic.dsc.stream.debs.bolt.ReductionBolt;
 import edu.indiana.soic.dsc.stream.debs.bolt.ReductionFunction;
 import edu.indiana.soic.dsc.stream.debs.spout.FileReadingSpout;
@@ -39,6 +37,9 @@ public class DebsTopology {
     options.addOption(createOption(Constants.ARGS_PRINT_INTERVAL, true, "Print debug messages", false));
     options.addOption(createOption(Constants.ARGS_MAX_PENDING, true, "Max pending", false));
     options.addOption(createOption(Constants.ARGS_MEM, true, "Mem", false));
+    options.addOption(createOption(Constants.ARGS_IN_FILE, true, "In file", true));
+    options.addOption(createOption(Constants.ARGS_OUT_FILE, true, "Out file", true));
+    options.addOption(createOption(Constants.ARGS_MAX_PLUGS, true, "Max plugs", false));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -48,6 +49,10 @@ public class DebsTopology {
     boolean debug = cmd.hasOption(Constants.ARGS_DEBUG);
     boolean local = cmd.hasOption(Constants.ARGS_LOCAL);
     String pValue = cmd.getOptionValue(Constants.ARGS_PARALLEL);
+    int maxPlugs = -1;
+    if (cmd.hasOption(Constants.ARGS_MAX_PLUGS)) {
+      maxPlugs = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_MAX_PLUGS));
+    }
     int p = Integer.parseInt(pValue);
 
     int streamManagers = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_STREAM_MGRS));
@@ -80,6 +85,7 @@ public class DebsTopology {
     conf.put(Constants.ARGS_STREAM_MGRS, streamManagers);
     conf.put(Constants.ARGS_IN_FILE, inFile);
     conf.put(Constants.ARGS_OUT_FILE, outFile);
+    conf.put(Constants.ARGS_MAX_PLUGS, maxPlugs);
     conf.setEnableAcking(false);
     if (cmd.hasOption(Constants.ARGS_PARALLEL)) {
       conf.put(Constants.ARGS_PARALLEL, p);

@@ -12,11 +12,11 @@ public class HouseHold implements Entity {
   @Override
   public void addReading(DataReading reading) {
     Plug plug = null;
-    if (!plugMap.containsKey(reading.householdId)) {
-      plug = new Plug(0, 3600, 3600 * 24);
-      plugMap.put(reading.householdId, plug);
+    if (!plugMap.containsKey(reading.plugId)) {
+      plug = new Plug(reading.plugId, 3600, 3600 * 24);
+      plugMap.put(reading.plugId, plug);
     } else {
-      plug = plugMap.get(reading.householdId);
+      plug = plugMap.get(reading.plugId);
     }
     plug.addReading(reading);
   }
