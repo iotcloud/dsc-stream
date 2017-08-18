@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 public class MedianBolt extends BaseRichBolt {
   private static Logger LOG = Logger.getLogger(MedianBolt.class.getName());
 
-  private Map<Integer, House> plugToHouse;
+  private Map<Integer, House> houses;
 
   private OutputCollector outputCollector;
 
@@ -28,46 +28,59 @@ public class MedianBolt extends BaseRichBolt {
   
   private int thisTaskId;
 
+  private boolean debug;
+
+  private int pi;
+
+  private int count = 0;
+
   // plugid, plugmessage
-  private Map<Integer, PlugsMessages> plugMsgs;
+  private Map<String, PlugsMessages> plugMsgs;
 
   @Override
   public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
-    plugToHouse = new HashMap<>();
+    houses = new HashMap<>();
     plugMsgs = new HashMap<>();
     this.outputCollector = outputCollector;
     kryo = new Kryo();
     DebsUtils.registerClasses(kryo);
     thisTaskId = topologyContext.getThisTaskId();
+    this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
+    this.pi = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
   }
 
   @Override
   public void execute(Tuple tuple) {
     Object input = tuple.getValueByField(Constants.DATA_FIELD);
     Object time = tuple.getValueByField(Constants.TIME_FIELD);
+    String plugId = (String)tuple.getValueByField(Constants.PLUG_ID_FILED);
 
     DataReading reading = (DataReading) DebsUtils.deSerialize(kryo, (byte [])input, DataReading.class);
-
+    if (debug && count % pi == 0) {
+      LOG.info("Got message....");
+    }
     House house;
-    if (plugToHouse.containsKey(reading.houseId)) {
-      house = plugToHouse.get(reading.houseId);
+    if (houses.containsKey(reading.houseId)) {
+      house = houses.get(reading.houseId);
     } else {
       house = new House();
-      plugToHouse.put(reading.houseId, house);
+      houses.put(reading.houseId, house);
     }
     house.addReading(reading);
 
     Plug plug = house.getPlug(reading.householdId, reading.plugId);
     PlugMsg plugMsg = createPlugMsg(reading, plug);
 
-    PlugsMessages plugsMessages = plugMsgs.get(plug.id);
+    PlugsMessages plugsMessages = plugMsgs.get(plugId);
     if (plugsMessages == null) {
       plugsMessages = new PlugsMessages();
-      plugMsgs.put(plug.id, plugsMessages);
+      plugMsgs.put(plugId, plugsMessages);
     }
     plugsMessages.add((Long) time, plugMsg.dailyEndTs, plugMsg);
 
     processTaskPlugMessages();
+
+    count++;
   }
 
   private PlugMsg createPlugMsg(DataReading reading, Plug plug) {
@@ -113,32 +126,40 @@ public class MedianBolt extends BaseRichBolt {
   private void processTaskPlugMessages() {
     MessageState state = checkState();
     while (state == MessageState.NUMBER_MISMATCH) {
+      if (debug && count % pi == 0) {
+        LOG.info("Number mismatch");
+      }
       removeOld();
       state = checkState();
     }
 
     if (state == MessageState.GOOD) {
+      if (debug && count % pi == 0) {
+        LOG.info("Good state - emitting");
+      }
       PlugMsg plugMsg = reduceMessages();
+      // remove the first element of the queues
+      removeFirst();
       byte[] b = DebsUtils.serialize(kryo, plugMsg);
 
       List<Object> emit = new ArrayList<>();
       emit.add(System.nanoTime());
       emit.add(b);
 
-      outputCollector.emit(Constants.PLUG_REDUCE_STREAM, new ArrayList<Tuple>(), emit);
+      outputCollector.emit(Constants.PLUG_REDUCE_STREAM, emit);
     }
   }
 
   private void removeOld() {
     List<Long> values = new ArrayList<>();
-    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+    for (Map.Entry<String, PlugsMessages> e : plugMsgs.entrySet()) {
         PlugsMessages tpm = e.getValue();
         values.add(tpm.endTimes.get(0));
     }
 
     Collections.sort(values);
     long largest = values.get(values.size() - 1);
-    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+    for (Map.Entry<String, PlugsMessages> e : plugMsgs.entrySet()) {
       PlugsMessages tpm = e.getValue();
       if (tpm.endTimes.get(0) != largest) {
         tpm.removeFirst();
@@ -148,10 +169,14 @@ public class MedianBolt extends BaseRichBolt {
 
   private MessageState checkState() {
     long endTime = -1;
-    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+    MessageState state = MessageState.GOOD;
+    for (Map.Entry<String, PlugsMessages> e : plugMsgs.entrySet()) {
       PlugsMessages tpm = e.getValue();
 
+      LOG.info("Endtime: " + (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0)  + " size=" + tpm.endTimes.size() + " id=" + e.getKey());
+
       if (tpm.endTimes.size() < 2) {
+        LOG.warning("Waiting for messages");
         return MessageState.WAITING;
       }
 
@@ -160,17 +185,23 @@ public class MedianBolt extends BaseRichBolt {
       } else {
         if (endTime != tpm.endTimes.get(0)) {
           LOG.warning("End times are not equal");
-          return MessageState.NUMBER_MISMATCH;
+          state = MessageState.NUMBER_MISMATCH;
         }
       }
     }
-    return MessageState.GOOD;
+    return state;
+  }
+
+  private void removeFirst() {
+    for (Map.Entry<String, PlugsMessages> e : plugMsgs.entrySet()) {
+      e.getValue().removeFirst();
+    }
   }
 
   private PlugMsg reduceMessages() {
     PlugMsg aggrPlugMsg = new PlugMsg();
 
-    for (Map.Entry<Integer, PlugsMessages> e : plugMsgs.entrySet()) {
+    for (Map.Entry<String, PlugsMessages> e : plugMsgs.entrySet()) {
       PlugsMessages tpm = e.getValue();
       PlugMsg plugMsg = tpm.plugReadings.get(0);
 

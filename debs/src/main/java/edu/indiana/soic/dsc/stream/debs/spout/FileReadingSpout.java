@@ -76,8 +76,9 @@ public class FileReadingSpout extends BaseRichSpout {
           emit.add(System.nanoTime());
           byte b[] = DebsUtils.serialize(kryo, reading);
           emit.add(b);
-          emit.add(reading.plugId);
-
+          String uid = "" + reading.houseId + "_" + reading.householdId + "_" + reading.plugId;
+          emit.add(uid);
+          LOG.info("Emmting reading with: " + reading.plugId);
           outputCollector.emit(emit);
         }
       }
@@ -98,15 +99,16 @@ public class FileReadingSpout extends BaseRichSpout {
     int plugId = Integer.parseInt(splits[4]);
     int houseHoldId = Integer.parseInt(splits[5]);
     int houseId = Integer.parseInt(splits[6]);
-
-    if (plugId % noOfTasks == taskIdToIndex.get(taskId)) {
+    String uid = "" + houseId + "_" + houseHoldId + "_" + plugId;
+    int pid = uid.hashCode();
+    if (pid % noOfTasks == taskIdToIndex.get(taskId)) {
       if (maxPlugs > 0) {
         if (plugIdsConsidered.size() >= maxPlugs) {
-          if (plugIdsConsidered.contains(plugId)) {
+          if (plugIdsConsidered.contains(pid)) {
             return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
           }
         } else {
-          plugIdsConsidered.add(plugId);
+          plugIdsConsidered.add(pid);
           return new DataReading(id, timestamp, value, property, plugId, houseHoldId, houseId);
         }
       } else {

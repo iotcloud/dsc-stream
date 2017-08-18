@@ -22,6 +22,9 @@ public class ReductionFunction implements IReduce {
   // tasId, <plugId, PlugMsg>
   private Map<Integer, TaskPlugMessages> plugMessages;
   private IOutputCollector outputCollector;
+  private boolean debug;
+  private int pi;
+  private int count = 0;
 
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext,
@@ -34,6 +37,8 @@ public class ReductionFunction implements IReduce {
     this.outputCollector = iOutputCollector;
     this.kryo = new Kryo();
     DebsUtils.registerClasses(kryo);
+    this.debug = (boolean) map.get(Constants.ARGS_DEBUG);
+    this.pi = (int) map.get(Constants.ARGS_PRINT_INTERVAL);
   }
 
   @Override
@@ -41,32 +46,43 @@ public class ReductionFunction implements IReduce {
     Object object = tuple.getValueByField(Constants.PLUG_FIELD);
     Object time = tuple.getValueByField(Constants.TIME_FIELD);
 
+    if (debug && count % pi == 0) {
+      LOG.info("Got message from " + i);
+    }
+
     PlugMsg plugMsg = (PlugMsg) DebsUtils.deSerialize(kryo, (byte [])object, PlugMsg.class);
     TaskPlugMessages taskPlugMessages = plugMessages.get(i);
 
     taskPlugMessages.endTimes.add(plugMsg.dailyEndTs);
     taskPlugMessages.plugMsgs.add(plugMsg);
     taskPlugMessages.times.add((Long) time);
-
     processTaskPlugMessages();
+    count++;
   }
 
   private void processTaskPlugMessages() {
     MessageState state = checkState();
     while (state == MessageState.NUMBER_MISMATCH) {
+      if (debug && count % pi == 0) {
+        LOG.info("Mismatch state");
+      }
       removeOld();
       state = checkState();
     }
 
     if (state == MessageState.GOOD) {
+      if (debug && count % pi == 0) {
+        LOG.info("Good state - emitting");
+      }
       PlugMsg plugMsg = reduceMessages();
+      removeFirst();
       byte[] b = DebsUtils.serialize(kryo, plugMsg);
 
       List<Object> emit = new ArrayList<>();
       emit.add(System.nanoTime());
       emit.add(b);
 
-      outputCollector.emit(Constants.PLUG_REDUCE_STREAM, new ArrayList<Tuple>(), emit);
+      outputCollector.emit(Constants.PLUG_REDUCE_STREAM, null, emit);
     }
   }
 
@@ -90,9 +106,11 @@ public class ReductionFunction implements IReduce {
 
   private MessageState checkState() {
     long endTime = -1;
+    MessageState state = MessageState.GOOD;
     for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
       TaskPlugMessages tpm = e.getValue();
 
+      LOG.info("Endtime: " + (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0) + " size=" + tpm.endTimes.size() + " id=" + e.getKey());
       if (tpm.endTimes.size() < 2) {
         return MessageState.WAITING;
       }
@@ -102,11 +120,17 @@ public class ReductionFunction implements IReduce {
       } else {
         if (endTime != tpm.endTimes.get(0)) {
           LOG.warning("End times are not equal");
-          return MessageState.NUMBER_MISMATCH;
+          state = MessageState.NUMBER_MISMATCH;
         }
       }
     }
-    return MessageState.GOOD;
+    return state;
+  }
+
+  private void removeFirst() {
+    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
+      e.getValue().removeFirst();
+    }
   }
 
   private PlugMsg reduceMessages() {
