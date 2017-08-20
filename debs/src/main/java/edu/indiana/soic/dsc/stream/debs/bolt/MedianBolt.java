@@ -34,6 +34,10 @@ public class MedianBolt extends BaseRichBolt {
 
   private int count = 0;
 
+  private int removeTotalCount = 0;
+
+  private int removeTimeCount = 0;
+
   // plugid, plugmessage
   private Map<String, PlugsMessages> plugMsgs;
 
@@ -56,9 +60,6 @@ public class MedianBolt extends BaseRichBolt {
     String plugId = (String)tuple.getValueByField(Constants.PLUG_ID_FILED);
 
     DataReading reading = (DataReading) DebsUtils.deSerialize(kryo, (byte [])input, DataReading.class);
-    if (debug && count % pi == 0) {
-      LOG.info("Got message....");
-    }
     House house;
     if (houses.containsKey(reading.houseId)) {
       house = houses.get(reading.houseId);
@@ -70,7 +71,9 @@ public class MedianBolt extends BaseRichBolt {
 
     Plug plug = house.getPlug(reading.householdId, reading.plugId);
     PlugMsg plugMsg = createPlugMsg(reading, plug);
-
+    if (debug && count % pi == 0) {
+      LOG.info("Got message : " + plugId + " line: " + plugMsg.line + " source: " + tuple.getSourceTask());
+    }
     PlugsMessages plugsMessages = plugMsgs.get(plugId);
     if (plugsMessages == null) {
       plugsMessages = new PlugsMessages();
@@ -93,7 +96,8 @@ public class MedianBolt extends BaseRichBolt {
     ArrayList<Integer> aggrs = new ArrayList<>();
     aggrs.add(reading.plugId);
 
-    return new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart, hourlyEnd, dailyStart, dailyEnd, aggrs);
+    return new PlugMsg(plug.id, averageHourly, averageDaily, hourlyStart,
+        hourlyEnd, dailyStart, dailyEnd, aggrs, reading.line);
   }
 
   @Override
@@ -118,7 +122,10 @@ public class MedianBolt extends BaseRichBolt {
 
     void removeFirst() {
       times.remove(0);
-      endTimes.remove(0);
+      Long time = endTimes.remove(0);
+      if (debug && count % pi == 0) {
+        LOG.info("removing time: " + time);
+      }
       plugReadings.remove(0);
     }
   }
@@ -126,9 +133,6 @@ public class MedianBolt extends BaseRichBolt {
   private void processTaskPlugMessages() {
     MessageState state = checkState();
     while (state == MessageState.NUMBER_MISMATCH) {
-      if (debug && count % pi == 0) {
-        LOG.info("Number mismatch");
-      }
       removeOld();
       state = checkState();
     }
@@ -156,6 +160,12 @@ public class MedianBolt extends BaseRichBolt {
         PlugsMessages tpm = e.getValue();
         values.add(tpm.endTimes.get(0));
     }
+    String s = "";
+    for (Long i : values) {
+      s += i + " ";
+    }
+//    LOG.info("Removing: " + s);
+    removeTimeCount++;
 
     Collections.sort(values);
     long largest = values.get(values.size() - 1);
@@ -163,7 +173,11 @@ public class MedianBolt extends BaseRichBolt {
       PlugsMessages tpm = e.getValue();
       if (tpm.endTimes.get(0) != largest) {
         tpm.removeFirst();
+        removeTotalCount++;
       }
+    }
+    if (debug) {
+      LOG.info("Remove time count: " + removeTimeCount + " removeTotal: " + removeTotalCount + " values: " + s);
     }
   }
 
@@ -172,22 +186,31 @@ public class MedianBolt extends BaseRichBolt {
     MessageState state = MessageState.GOOD;
     for (Map.Entry<String, PlugsMessages> e : plugMsgs.entrySet()) {
       PlugsMessages tpm = e.getValue();
-
-      LOG.info("Endtime: " + (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0)  + " size=" + tpm.endTimes.size() + " id=" + e.getKey());
+      String s = "";
+      for (PlugMsg i : e.getValue().plugReadings) {
+        s += i.line + " ";
+      }
+      if (debug && count % pi == 0) {
+        LOG.info("PlugId: " + e.getKey() + " Endtime: " +
+            (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0) + " size=" +
+            tpm.endTimes.size() + " id=" + e.getKey() + " list: " + s);
+      }
 
       if (tpm.endTimes.size() < 2) {
-        LOG.warning("Waiting for messages");
-        return MessageState.WAITING;
+        state = MessageState.WAITING;
       }
 
-      if (endTime < 0) {
-        endTime = tpm.endTimes.get(0);
-      } else {
-        if (endTime != tpm.endTimes.get(0)) {
-          LOG.warning("End times are not equal");
-          state = MessageState.NUMBER_MISMATCH;
-        }
+      if (state == MessageState.WAITING) {
+        continue;
       }
+
+//      if (endTime < 0) {
+//        endTime = tpm.endTimes.get(0);
+//      } else {
+//        if (endTime != tpm.endTimes.get(0)) {
+//          state = MessageState.NUMBER_MISMATCH;
+//        }
+//      }
     }
     return state;
   }

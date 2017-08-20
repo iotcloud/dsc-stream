@@ -13,6 +13,7 @@ public class PlugMsg {
   public int noOfHourlyMsgs = 3600;
   public int noOfDailyMsgs = 3600 * 24;
   public ArrayList<Integer> aggregatedPlugs = new ArrayList<>();
+  public String line;
 
   public PlugMsg() {
   }
@@ -28,6 +29,22 @@ public class PlugMsg {
     this.dailyEndTs = dailyEndTs;
     this.dailyStartTs = dailyStartTs;
     this.aggregatedPlugs = aggregatedPlugs;
+  }
+
+  public PlugMsg(int id, float averageHourly, float averageDaily, long hourlyStartTs,
+                 long hourlyEndTs, long dailyStartTs, long dailyEndTs,
+                 ArrayList<Integer> aggregatedPlugs, String line) {
+    this.id = id;
+    this.averageHourly = averageHourly;
+    this.averageDaily = averageDaily;
+    this.hourlyStartTs = hourlyStartTs;
+    this.hourlyEndTs = hourlyEndTs;
+    this.dailyStartTs = dailyStartTs;
+    this.dailyEndTs = dailyEndTs;
+    this.noOfHourlyMsgs = noOfHourlyMsgs;
+    this.noOfDailyMsgs = noOfDailyMsgs;
+    this.aggregatedPlugs = aggregatedPlugs;
+    this.line = line;
   }
 
   public int getId() {

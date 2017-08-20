@@ -25,6 +25,9 @@ public class ReductionFunction implements IReduce {
   private boolean debug;
   private int pi;
   private int count = 0;
+  private int removeTotalCount = 0;
+
+  private int removeTimeCount = 0;
 
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext,
@@ -92,7 +95,7 @@ public class ReductionFunction implements IReduce {
       TaskPlugMessages tpm = e.getValue();
       values.add(tpm.endTimes.get(0));
     }
-
+    removeTimeCount++;
     Collections.sort(values);
     long largest = values.get(values.size() - 1);
     for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
@@ -100,7 +103,11 @@ public class ReductionFunction implements IReduce {
 
       if (tpm.endTimes.get(0) != largest) {
         tpm.removeFirst();
+        removeTotalCount++;
       }
+    }
+    if (debug && count % pi == 0) {
+      LOG.info("Remove time count: " + removeTimeCount + " removeTotal: " + removeTotalCount);
     }
   }
 
@@ -110,19 +117,21 @@ public class ReductionFunction implements IReduce {
     for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
       TaskPlugMessages tpm = e.getValue();
 
-      LOG.info("Endtime: " + (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0) + " size=" + tpm.endTimes.size() + " id=" + e.getKey());
+      if (debug && count % pi == 0) {
+        LOG.info("Endtime: " + (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0) + " size=" + tpm.endTimes.size() + " id=" + e.getKey());
+      }
       if (tpm.endTimes.size() < 2) {
         return MessageState.WAITING;
       }
 
-      if (endTime < 0) {
-        endTime = tpm.endTimes.get(0);
-      } else {
-        if (endTime != tpm.endTimes.get(0)) {
-          LOG.warning("End times are not equal");
-          state = MessageState.NUMBER_MISMATCH;
-        }
-      }
+//      if (endTime < 0) {
+//        endTime = tpm.endTimes.get(0);
+//      } else {
+//        if (endTime != tpm.endTimes.get(0)) {
+//          LOG.warning("End times are not equal");
+//          state = MessageState.NUMBER_MISMATCH;
+//        }
+//      }
     }
     return state;
   }
