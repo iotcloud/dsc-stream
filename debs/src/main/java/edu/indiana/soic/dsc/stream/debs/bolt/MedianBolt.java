@@ -13,6 +13,7 @@ import edu.indiana.soic.dsc.stream.debs.model.Calculation;
 import edu.indiana.soic.dsc.stream.debs.model.House;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
 import edu.indiana.soic.dsc.stream.debs.msg.PlugMsg;
+import edu.indiana.soic.dsc.stream.debs.msg.PlugValue;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -86,12 +87,13 @@ public class MedianBolt extends BaseRichBolt {
   }
 
   private PlugMsg reduceMessages() {
-    PlugMsg aggrPlugMsg = new PlugMsg();
+    PlugMsg aggrPlugMsg;
     int totalDaily = 0;
     int totalHourly = 0;
     float valueDaily = 0;
     float valueHourly = 0;
-    ArrayList<String> plugs = new ArrayList<>();
+    ArrayList<PlugValue> hourlyPlugValues = new ArrayList<>();
+    ArrayList<PlugValue> dailyPlugValues = new ArrayList<>();
 
     for (Map.Entry<Integer, House> e : houses.entrySet()) {
       House house = e.getValue();
@@ -102,10 +104,13 @@ public class MedianBolt extends BaseRichBolt {
       totalHourly += hourlyCalculation.noOfItems;
       valueDaily += dailyCalculation.value;
       valueHourly += hourlyCalculation.value;
-      plugs.addAll(e.getValue().getPlugIds());
+      hourlyPlugValues.addAll(e.getValue().getHourlyPlugValues());
+      dailyPlugValues.addAll(e.getValue().getDailyPlugValues());
     }
 
-    aggrPlugMsg = new PlugMsg(thisTaskId, valueHourly, valueDaily, totalHourly, totalDaily, plugs);
+//    LOG.info("Hourly plug values size: " + hourlyPlugValues.size() + " daily: " + dailyPlugValues.size());
+    aggrPlugMsg = new PlugMsg(thisTaskId, valueHourly, valueDaily, totalHourly,
+        totalDaily, hourlyPlugValues, dailyPlugValues);
     return aggrPlugMsg;
   }
 }

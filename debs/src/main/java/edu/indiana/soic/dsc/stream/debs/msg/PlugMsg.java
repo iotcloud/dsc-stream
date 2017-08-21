@@ -9,30 +9,35 @@ public class PlugMsg {
 
   public int noOfHourlyMsgs;
   public int noOfDailyMsgs;
-  public ArrayList<String> aggregatedPlugs = new ArrayList<>();
+  public ArrayList<PlugValue> aggregatedHourlyPlugs = new ArrayList<>();
+  public ArrayList<PlugValue> aggregatedDailyPlugs = new ArrayList<>();
   public String line;
 
   public PlugMsg() {
   }
 
   public PlugMsg(int id, float hourlySum, float dailySum, int noOfHourlyMsgs,
-                 int noOfDailyMsgs, ArrayList<String> aggregatedPlugs) {
+                 int noOfDailyMsgs, ArrayList<PlugValue> aggregatedHourlyPlugs,
+                 ArrayList<PlugValue> aggregatedDailyPlugs) {
     this.taskId = id;
     this.hourlySum = hourlySum;
     this.dailySum = dailySum;
     this.noOfHourlyMsgs = noOfHourlyMsgs;
     this.noOfDailyMsgs = noOfDailyMsgs;
-    this.aggregatedPlugs = aggregatedPlugs;
+    this.aggregatedHourlyPlugs = aggregatedHourlyPlugs;
+    this.aggregatedDailyPlugs = aggregatedDailyPlugs;
   }
 
   public PlugMsg(int id, float hourlySum, float dailySum, int noOfHourlyMsgs,
-                 int noOfDailyMsgs, ArrayList<String> aggregatedPlugs, String line) {
+                 int noOfDailyMsgs, ArrayList<PlugValue> aggregatedPlugs,
+                 ArrayList<PlugValue> aggregatedDailyPlugs, String line) {
     this.taskId = id;
     this.hourlySum = hourlySum;
     this.dailySum = dailySum;
     this.noOfHourlyMsgs = noOfHourlyMsgs;
     this.noOfDailyMsgs = noOfDailyMsgs;
-    this.aggregatedPlugs = aggregatedPlugs;
+    this.aggregatedHourlyPlugs = aggregatedPlugs;
+    this.aggregatedDailyPlugs = aggregatedDailyPlugs;
     this.line = line;
   }
 

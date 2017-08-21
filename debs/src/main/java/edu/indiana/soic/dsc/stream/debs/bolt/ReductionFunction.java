@@ -101,14 +101,15 @@ public class ReductionFunction implements IReduce {
       TaskPlugMessages tpm = e.getValue();
       PlugMsg plugMsg = tpm.plugMsgs.get(0);
 
-      aggrPlugMsg.aggregatedPlugs.addAll(plugMsg.aggregatedPlugs);
+      aggrPlugMsg.aggregatedHourlyPlugs.addAll(plugMsg.aggregatedHourlyPlugs);
+      aggrPlugMsg.aggregatedDailyPlugs.addAll(plugMsg.aggregatedDailyPlugs);
       aggrPlugMsg.dailySum += plugMsg.dailySum;
       aggrPlugMsg.hourlySum += plugMsg.hourlySum;
       aggrPlugMsg.noOfDailyMsgs += plugMsg.noOfDailyMsgs;
       aggrPlugMsg.noOfHourlyMsgs += plugMsg.noOfHourlyMsgs;
     }
     aggrPlugMsg.taskId = thisTaskId;
-
+//    LOG.info("Function size: " + aggrPlugMsg.aggregatedDailyPlugs.size());
     return aggrPlugMsg;
   }
 

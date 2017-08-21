@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.Output;
 import edu.indiana.soic.dsc.stream.debs.msg.DataReading;
 import edu.indiana.soic.dsc.stream.debs.msg.HouseMsg;
 import edu.indiana.soic.dsc.stream.debs.msg.PlugMsg;
+import edu.indiana.soic.dsc.stream.debs.msg.PlugValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -47,5 +48,6 @@ public class DebsUtils {
     // kryo.register(ChainTrace.class);
     kryo.register(HouseMsg.class);
     kryo.register(PlugMsg.class);
+    kryo.register(PlugValue.class);
   }
 }
