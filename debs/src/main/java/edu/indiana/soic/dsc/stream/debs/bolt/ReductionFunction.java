@@ -25,9 +25,6 @@ public class ReductionFunction implements IReduce {
   private boolean debug;
   private int pi;
   private int count = 0;
-  private int removeTotalCount = 0;
-
-  private int removeTimeCount = 0;
 
   @Override
   public void prepare(Map<String, Object> map, TopologyContext topologyContext,
@@ -56,24 +53,15 @@ public class ReductionFunction implements IReduce {
     PlugMsg plugMsg = (PlugMsg) DebsUtils.deSerialize(kryo, (byte [])object, PlugMsg.class);
     TaskPlugMessages taskPlugMessages = plugMessages.get(i);
 
-    taskPlugMessages.endTimes.add(plugMsg.dailyEndTs);
     taskPlugMessages.plugMsgs.add(plugMsg);
     taskPlugMessages.times.add((Long) time);
+
     processTaskPlugMessages();
     count++;
   }
 
   private void processTaskPlugMessages() {
-    MessageState state = checkState();
-    while (state == MessageState.NUMBER_MISMATCH) {
-      if (debug && count % pi == 0) {
-        LOG.info("Mismatch state");
-      }
-      removeOld();
-      state = checkState();
-    }
-
-    if (state == MessageState.GOOD) {
+    if (checkState()) {
       if (debug && count % pi == 0) {
         LOG.info("Good state - emitting");
       }
@@ -89,51 +77,15 @@ public class ReductionFunction implements IReduce {
     }
   }
 
-  private void removeOld() {
-    List<Long> values = new ArrayList<>();
-    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
-      TaskPlugMessages tpm = e.getValue();
-      values.add(tpm.endTimes.get(0));
-    }
-    removeTimeCount++;
-    Collections.sort(values);
-    long largest = values.get(values.size() - 1);
+  private boolean checkState() {
     for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
       TaskPlugMessages tpm = e.getValue();
 
-      if (tpm.endTimes.get(0) != largest) {
-        tpm.removeFirst();
-        removeTotalCount++;
+      if (tpm.plugMsgs.size() < 1) {
+        return false;
       }
     }
-    if (debug && count % pi == 0) {
-      LOG.info("Remove time count: " + removeTimeCount + " removeTotal: " + removeTotalCount);
-    }
-  }
-
-  private MessageState checkState() {
-    long endTime = -1;
-    MessageState state = MessageState.GOOD;
-    for (Map.Entry<Integer, TaskPlugMessages> e : plugMessages.entrySet()) {
-      TaskPlugMessages tpm = e.getValue();
-
-      if (debug && count % pi == 0) {
-        LOG.info("Endtime: " + (tpm.endTimes.size() > 0 ? tpm.endTimes.get(0) : 0) + " size=" + tpm.endTimes.size() + " id=" + e.getKey());
-      }
-      if (tpm.endTimes.size() < 2) {
-        return MessageState.WAITING;
-      }
-
-//      if (endTime < 0) {
-//        endTime = tpm.endTimes.get(0);
-//      } else {
-//        if (endTime != tpm.endTimes.get(0)) {
-//          LOG.warning("End times are not equal");
-//          state = MessageState.NUMBER_MISMATCH;
-//        }
-//      }
-    }
-    return state;
+    return true;
   }
 
   private void removeFirst() {
@@ -150,14 +102,12 @@ public class ReductionFunction implements IReduce {
       PlugMsg plugMsg = tpm.plugMsgs.get(0);
 
       aggrPlugMsg.aggregatedPlugs.addAll(plugMsg.aggregatedPlugs);
-      aggrPlugMsg.averageDaily += plugMsg.averageDaily;
-      aggrPlugMsg.averageHourly += plugMsg.averageHourly;
-      aggrPlugMsg.dailyEndTs = plugMsg.dailyEndTs;
-      aggrPlugMsg.dailyStartTs = plugMsg.dailyStartTs;
-      aggrPlugMsg.hourlyEndTs = plugMsg.hourlyEndTs;
-      aggrPlugMsg.hourlyStartTs = plugMsg.hourlyStartTs;
+      aggrPlugMsg.dailySum += plugMsg.dailySum;
+      aggrPlugMsg.hourlySum += plugMsg.hourlySum;
+      aggrPlugMsg.noOfDailyMsgs += plugMsg.noOfDailyMsgs;
+      aggrPlugMsg.noOfHourlyMsgs += plugMsg.noOfHourlyMsgs;
     }
-    aggrPlugMsg.id = thisTaskId;
+    aggrPlugMsg.taskId = thisTaskId;
 
     return aggrPlugMsg;
   }
@@ -169,12 +119,10 @@ public class ReductionFunction implements IReduce {
 
   private class TaskPlugMessages {
     List<Long> times = new ArrayList<>();
-    List<Long> endTimes = new ArrayList<>();
     List<PlugMsg> plugMsgs = new ArrayList<>();
 
     void removeFirst() {
       times.remove(0);
-      endTimes.remove(0);
       plugMsgs.remove(0);
     }
   }

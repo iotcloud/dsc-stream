@@ -5,13 +5,13 @@ import java.util.logging.Logger;
 public class CircularArray {
   private static Logger LOG = Logger.getLogger(CircularArray.class.getName());
 
-  float values[];
-  long times[];
+  private float values[];
+  private long times[];
 
-  int head;
-  int filledAmount;
-  int capacity;
-  float sum = 0;
+  private int head;
+  private int filledAmount;
+  private int capacity;
+  private float sum = 0;
 
   public CircularArray(int capacity) {
     this.capacity = capacity;
@@ -51,8 +51,12 @@ public class CircularArray {
     return values[0];
   }
 
-  public float average() {
-    return sum / filledAmount;
+  public float sum() {
+    return sum;
+  }
+
+  public int noOfValues() {
+    return filledAmount;
   }
 
   public long getStartTime() {

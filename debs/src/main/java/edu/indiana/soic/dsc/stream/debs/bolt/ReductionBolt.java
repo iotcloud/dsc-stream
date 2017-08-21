@@ -41,7 +41,8 @@ public class ReductionBolt extends BaseRichBolt {
     Object output = tuple.getValueByField(Constants.PLUG_FIELD);
     PlugMsg msg = (PlugMsg) DebsUtils.deSerialize(kryo, (byte[]) output, PlugMsg.class);
 
-    LOG.info(msg.averageDaily + "," + msg.averageHourly + ", " + msg.aggregatedPlugs.size());
+    LOG.info(msg.noOfDailyMsgs + "," + msg.dailySum / msg.noOfDailyMsgs + "," +
+        msg.noOfHourlyMsgs + ", " + msg.hourlySum / msg.noOfHourlyMsgs + ", " + msg.aggregatedPlugs.size());
   }
 
   private void openFile(String openFile) {

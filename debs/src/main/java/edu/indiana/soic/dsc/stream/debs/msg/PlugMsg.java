@@ -3,72 +3,61 @@ package edu.indiana.soic.dsc.stream.debs.msg;
 import java.util.ArrayList;
 
 public class PlugMsg {
-  public int id;
-  public float averageHourly;
-  public float averageDaily;
-  public long hourlyStartTs;
-  public long hourlyEndTs;
-  public long dailyStartTs;
-  public long dailyEndTs;
-  public int noOfHourlyMsgs = 3600;
-  public int noOfDailyMsgs = 3600 * 24;
-  public ArrayList<Integer> aggregatedPlugs = new ArrayList<>();
+  public int taskId;
+  public float hourlySum;
+  public float dailySum;
+
+  public int noOfHourlyMsgs;
+  public int noOfDailyMsgs;
+  public ArrayList<String> aggregatedPlugs = new ArrayList<>();
   public String line;
 
   public PlugMsg() {
   }
 
-  public PlugMsg(int id, float averageHourly, float averageDaily,
-                 long hourlyStartTs, long hourlyEndTs, long dailyStartTs, long dailyEndTs,
-                 ArrayList<Integer> aggregatedPlugs) {
-    this.id = id;
-    this.averageHourly = averageHourly;
-    this.averageDaily = averageDaily;
-    this.hourlyStartTs = hourlyStartTs;
-    this.hourlyEndTs = hourlyEndTs;
-    this.dailyEndTs = dailyEndTs;
-    this.dailyStartTs = dailyStartTs;
+  public PlugMsg(int id, float hourlySum, float dailySum, int noOfHourlyMsgs,
+                 int noOfDailyMsgs, ArrayList<String> aggregatedPlugs) {
+    this.taskId = id;
+    this.hourlySum = hourlySum;
+    this.dailySum = dailySum;
+    this.noOfHourlyMsgs = noOfHourlyMsgs;
+    this.noOfDailyMsgs = noOfDailyMsgs;
     this.aggregatedPlugs = aggregatedPlugs;
   }
 
-  public PlugMsg(int id, float averageHourly, float averageDaily, long hourlyStartTs,
-                 long hourlyEndTs, long dailyStartTs, long dailyEndTs,
-                 ArrayList<Integer> aggregatedPlugs, String line) {
-    this.id = id;
-    this.averageHourly = averageHourly;
-    this.averageDaily = averageDaily;
-    this.hourlyStartTs = hourlyStartTs;
-    this.hourlyEndTs = hourlyEndTs;
-    this.dailyStartTs = dailyStartTs;
-    this.dailyEndTs = dailyEndTs;
+  public PlugMsg(int id, float hourlySum, float dailySum, int noOfHourlyMsgs,
+                 int noOfDailyMsgs, ArrayList<String> aggregatedPlugs, String line) {
+    this.taskId = id;
+    this.hourlySum = hourlySum;
+    this.dailySum = dailySum;
     this.noOfHourlyMsgs = noOfHourlyMsgs;
     this.noOfDailyMsgs = noOfDailyMsgs;
     this.aggregatedPlugs = aggregatedPlugs;
     this.line = line;
   }
 
-  public int getId() {
-    return id;
+  public int getTaskId() {
+    return taskId;
   }
 
-  public float getAverageHourly() {
-    return averageHourly;
+  public float getHourlySum() {
+    return hourlySum;
   }
 
-  public void setId(int id) {
-    this.id = id;
+  public void setTaskId(int taskId) {
+    this.taskId = taskId;
   }
 
-  public void setAverageHourly(float averageHourly) {
-    this.averageHourly = averageHourly;
+  public void setHourlySum(float hourlySum) {
+    this.hourlySum = hourlySum;
   }
 
-  public float getAverageDaily() {
-    return averageDaily;
+  public float getDailySum() {
+    return dailySum;
   }
 
-  public void setAverageDaily(float averageDaily) {
-    this.averageDaily = averageDaily;
+  public void setDailySum(float dailySum) {
+    this.dailySum = dailySum;
   }
 
   public void setNoOfHourlyMsgs(int noOfHourlyMsgs) {

@@ -6,50 +6,34 @@ public class Plug implements Entity{
   public int id;
 
   public CircularArray hourly;
-  public CircularArray daily;
 
-  int window1, window2;
+  int window;
 
-  public Plug(int id, int window1, int window2) {
-    if (window1 <= 0 || window2 <= 0) {
+  public Plug(int id, int window) {
+    if (window <= 0) {
       throw new IllegalArgumentException();
     }
 
     this.id = id;
-    this.window1 = window1;
-    this.window2 = window2;
+    this.window = window;
 
-    hourly = new CircularArray(window1);
-    daily = new CircularArray(window2);
+    hourly = new CircularArray(window);
   }
 
   @Override
   public void addReading(DataReading reading) {
     hourly.add(reading.value, reading.timeStamp);
-    daily.add(reading.value, reading.timeStamp);
   }
 
-  public float averageHourly() {
-    return hourly.average();
-  }
-
-  public float averageDaily() {
-    return daily.average();
-  }
-
-  public long hourlyStartTime() {
+  public long startTime() {
     return hourly.getStartTime();
   }
 
-  public long hourlyEndTime() {
+  public long endTime() {
     return hourly.getEndTime();
   }
 
-  public long dailyStartTime() {
-    return hourly.getStartTime();
-  }
-
-  public long dailyEndTime() {
-    return hourly.getEndTime();
+  public Calculation calculate() {
+    return new Calculation(hourly.sum(), hourly.noOfValues());
   }
 }
