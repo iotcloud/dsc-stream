@@ -124,7 +124,7 @@ public class DebsTopology {
         Constants.TOPOLOGY_FILE_READ_SPOUT, new Fields(Constants.PLUG_ID_FILED));
 
     builder.setBolt(Constants.REDUCTION_BOLT, reductionBolt, reductionParallel).
-        allReduceGrouping(Constants.MEDIAN_BOLT, Constants.PLUG_REDUCE_STREAM, reductionFunction);
+        reduceGrouping(Constants.MEDIAN_BOLT, Constants.PLUG_REDUCE_STREAM, reductionFunction);
 
     conf.setComponentRam(Constants.TOPOLOGY_FILE_READ_SPOUT, ByteAmount.fromMegabytes(megabytes));
     conf.setComponentRam(Constants.MEDIAN_BOLT, ByteAmount.fromMegabytes(megabytes));
