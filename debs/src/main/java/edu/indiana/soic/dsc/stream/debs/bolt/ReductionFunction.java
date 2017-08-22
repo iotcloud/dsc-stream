@@ -109,22 +109,11 @@ public class ReductionFunction implements IReduce {
       aggrPlugMsg.noOfHourlyMsgs += plugMsg.noOfHourlyMsgs;
     }
     aggrPlugMsg.taskId = thisTaskId;
-//    LOG.info("Function size: " + aggrPlugMsg.aggregatedDailyPlugs.size());
     return aggrPlugMsg;
   }
 
   @Override
   public void cleanup() {
 
-  }
-
-  private class TaskPlugMessages {
-    List<Long> times = new ArrayList<>();
-    List<PlugMsg> plugMsgs = new ArrayList<>();
-
-    void removeFirst() {
-      times.remove(0);
-      plugMsgs.remove(0);
-    }
   }
 }

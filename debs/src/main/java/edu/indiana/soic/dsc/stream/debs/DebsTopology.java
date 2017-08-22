@@ -12,6 +12,7 @@ import com.twitter.heron.simulator.Simulator;
 import edu.indiana.soic.dsc.stream.debs.bolt.MedianBolt;
 import edu.indiana.soic.dsc.stream.debs.bolt.ReductionBolt;
 import edu.indiana.soic.dsc.stream.debs.bolt.ReductionFunction;
+import edu.indiana.soic.dsc.stream.debs.bolt.ReductionSerialBolt;
 import edu.indiana.soic.dsc.stream.debs.spout.FileReadingSpout;
 import org.apache.commons.cli.*;
 
@@ -40,6 +41,7 @@ public class DebsTopology {
     options.addOption(createOption(Constants.ARGS_IN_FILE, true, "In file", true));
     options.addOption(createOption(Constants.ARGS_OUT_FILE, true, "Out file", true));
     options.addOption(createOption(Constants.ARGS_MAX_PLUGS, true, "Max plugs", false));
+    options.addOption(createOption(Constants.ARGS_MODE, true, "mode", true));
 
     CommandLineParser commandLineParser = new BasicParser();
     CommandLine cmd = commandLineParser.parse(options, args);
@@ -49,6 +51,8 @@ public class DebsTopology {
     boolean debug = cmd.hasOption(Constants.ARGS_DEBUG);
     boolean local = cmd.hasOption(Constants.ARGS_LOCAL);
     String pValue = cmd.getOptionValue(Constants.ARGS_PARALLEL);
+    String mode = cmd.getOptionValue(Constants.ARGS_MODE);
+
     int maxPlugs = -1;
     if (cmd.hasOption(Constants.ARGS_MAX_PLUGS)) {
       maxPlugs = Integer.parseInt(cmd.getOptionValue(Constants.ARGS_MAX_PLUGS));
@@ -86,12 +90,17 @@ public class DebsTopology {
     conf.put(Constants.ARGS_IN_FILE, inFile);
     conf.put(Constants.ARGS_OUT_FILE, outFile);
     conf.put(Constants.ARGS_MAX_PLUGS, maxPlugs);
+    conf.put(Constants.ARGS_MODE, mode);
     conf.setEnableAcking(false);
     if (cmd.hasOption(Constants.ARGS_PARALLEL)) {
       conf.put(Constants.ARGS_PARALLEL, p);
     }
 
-    buildReduceSerialTopology(builder, p, spoutParallel, spoutParallel, conf);
+    if (mode.equals("s")) {
+      buildReduceSerialTopology(builder, p, spoutParallel, spoutParallel, conf);
+    } else {
+      buildReduceTopology(builder, p, spoutParallel, spoutParallel, conf);
+    }
     // we are going to deploy on a real cluster
     if (!local) {
       Properties props = System.getProperties();
@@ -125,6 +134,26 @@ public class DebsTopology {
 
     builder.setBolt(Constants.REDUCTION_BOLT, reductionBolt, reductionParallel).
         reduceGrouping(Constants.MEDIAN_BOLT, Constants.PLUG_REDUCE_STREAM, reductionFunction);
+
+    conf.setComponentRam(Constants.TOPOLOGY_FILE_READ_SPOUT, ByteAmount.fromMegabytes(megabytes));
+    conf.setComponentRam(Constants.MEDIAN_BOLT, ByteAmount.fromMegabytes(megabytes));
+    conf.setComponentRam(Constants.REDUCTION_BOLT, ByteAmount.fromMegabytes(megabytes));
+  }
+
+  private static void buildReduceTopology(TopologyBuilder builder, int medianParallel,
+                                                int spoutParallel, int reductionParallel, Config conf) {
+    BaseRichSpout dataSpout;
+
+    dataSpout = new FileReadingSpout();
+    MedianBolt medianBolt = new MedianBolt();
+    ReductionSerialBolt reductionBolt = new ReductionSerialBolt();
+
+    builder.setSpout(Constants.TOPOLOGY_FILE_READ_SPOUT, dataSpout, spoutParallel);
+    builder.setBolt(Constants.MEDIAN_BOLT, medianBolt, medianParallel).fieldsGrouping(
+        Constants.TOPOLOGY_FILE_READ_SPOUT, new Fields(Constants.PLUG_ID_FILED));
+
+    builder.setBolt(Constants.REDUCTION_BOLT, reductionBolt, reductionParallel).
+        shuffleGrouping(Constants.MEDIAN_BOLT, Constants.PLUG_REDUCE_STREAM);
 
     conf.setComponentRam(Constants.TOPOLOGY_FILE_READ_SPOUT, ByteAmount.fromMegabytes(megabytes));
     conf.setComponentRam(Constants.MEDIAN_BOLT, ByteAmount.fromMegabytes(megabytes));

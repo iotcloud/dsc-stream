@@ -51,13 +51,13 @@ public class ReductionBolt extends BaseRichBolt {
 
     HashMap<Integer, List<PlugValue>> dailyHousePlugs = new HashMap<>();
     HashMap<Integer, List<PlugValue>> hourlyHousePlugs = new HashMap<>();
-    housePlugValues(msg.aggregatedDailyPlugs, dailyHousePlugs);
-    housePlugValues(msg.aggregatedHourlyPlugs, hourlyHousePlugs);
+    BoltUtils.housePlugValues(msg.aggregatedDailyPlugs, dailyHousePlugs);
+    BoltUtils.housePlugValues(msg.aggregatedHourlyPlugs, hourlyHousePlugs);
 
     Map<Integer, Float> hourlyHousePercentages = new HashMap<>();
     Map<Integer, Float> dailyHousePercentages = new HashMap<>();
-    housePercentage(hourlyAverage, hourlyHousePlugs, hourlyHousePercentages);
-    housePercentage(dailyAverage, dailyHousePlugs, dailyHousePercentages);
+    BoltUtils.housePercentage(hourlyAverage, hourlyHousePlugs, hourlyHousePercentages);
+    BoltUtils.housePercentage(dailyAverage, dailyHousePlugs, dailyHousePercentages);
 
     String hourly = "";
     for (Map.Entry<Integer, Float> e : hourlyHousePercentages.entrySet()) {
@@ -70,35 +70,11 @@ public class ReductionBolt extends BaseRichBolt {
     }
 
     LOG.info(msg.noOfDailyMsgs + "," + msg.dailySum / msg.noOfDailyMsgs + "," +
-        msg.noOfHourlyMsgs + ", " + msg.hourlySum / msg.noOfHourlyMsgs + ", " + msg.aggregatedHourlyPlugs.size() + " hourly: " + hourly + " daily: " + daily);
+        msg.noOfHourlyMsgs + ", " + msg.hourlySum / msg.noOfHourlyMsgs + ", " +
+        msg.aggregatedHourlyPlugs.size() + " hourly: " + hourly + " daily: " + daily);
   }
 
-  private void housePercentage(float average, HashMap<Integer, List<PlugValue>> dailyHousePlugs,
-                               Map<Integer, Float> housePercentages) {
-    for (Map.Entry<Integer, List<PlugValue>> e : dailyHousePlugs.entrySet()) {
-      int count = 0;
-      for (PlugValue p : e.getValue()) {
-        if (p.value > average) {
-          count++;
-        }
-      }
-      housePercentages.put(e.getKey(), ((float) count / e.getValue().size()));
-    }
-  }
 
-  private void housePlugValues(ArrayList<PlugValue> aggrValues, HashMap<Integer, List<PlugValue>> dailyHousePlugs) {
-    for (PlugValue p : aggrValues) {
-      int h = p.house;
-      List<PlugValue> plugValues;
-      if (dailyHousePlugs.containsKey(h)) {
-        plugValues = dailyHousePlugs.get(h);
-      } else {
-        plugValues = new ArrayList<>();
-        dailyHousePlugs.put(h, plugValues);
-      }
-      plugValues.add(p);
-    }
-  }
 
   private void openFile(String openFile) {
     try {

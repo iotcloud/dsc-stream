@@ -24,6 +24,7 @@ public abstract class Constants {
   public static final String ARGS_MAX_PENDING = "mp";
   public static final String ARGS_MEM = "mem";
   public static final String ARGS_LOCAL = "local";
+  public static final String ARGS_MODE = "mode";
 
   public static final String TOPOLOGY_FILE_READ_SPOUT = "fileReadBolt";
   public static final String TOPOLOGY_FILE_WRITE_BOLT = "fileWriteBolt";
