@@ -30,6 +30,10 @@ public class CircularArray {
     values[head] = val;
     times[head] = time;
 
+    if (filledAmount < capacity) {
+      filledAmount++;
+    }
+
     // move the circular array pointer
     if (capacity == filledAmount) {
       if (head + 1 < capacity) {
@@ -39,7 +43,6 @@ public class CircularArray {
       }
     } else {
       head++;
-      filledAmount++;
     }
   }
 
