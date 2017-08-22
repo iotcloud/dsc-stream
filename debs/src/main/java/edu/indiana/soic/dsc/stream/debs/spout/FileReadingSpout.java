@@ -81,7 +81,7 @@ public class FileReadingSpout extends BaseRichSpout {
 
         String line = fileReader.readLine();
         if (line == null) {
-          LOG.info("End of file has reached");
+          LOG.info("End of file has reached " + count);
           run = false;
           return;
         }
@@ -98,6 +98,9 @@ public class FileReadingSpout extends BaseRichSpout {
           emit.add(uid);
           outputCollector.emit(emit);
           count++;
+          if (count % pi == 0) {
+            LOG.info("Total number returned: " + count);
+          }
         }
       }
     } catch (IOException e) {
