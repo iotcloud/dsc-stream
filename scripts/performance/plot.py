@@ -12,7 +12,7 @@ xlabels_small = [16, 32, 64, 128, 256, 512]
 markers=["o", "x", "^", "v", "D", "*"]
 cls=["red", "blue", "green", "yellow", "black", "cyan", "magenta"]
 
-def plot_line(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=None, plot=None, logy=False, ylim=None, legendloc=None, ticks=None) :
+def plot_line(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, legend=None, plot=None, logy=False, ylim=None, legendloc=None, ticks=None, ymin=None, ymax=None) :
     if not plot:
         p = plt
     else:
@@ -33,6 +33,10 @@ def plot_line(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, le
     if not ylabel:
         ylabel = 'time (ms)'
     p.ylabel(ylabel)
+    if ymin:
+        p.ylim(ymin=ymin)
+    if ymax:
+        p.ylim(ymax=ymax)
     if ticks:
         plt.xticks(np.array([0, 64, 128,256,512]))
 
@@ -50,7 +54,7 @@ def plot_line(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, le
     p.minorticks_on()
     p.grid(b=True, which='major', color='k', linestyle='-')
     p.grid(b=True, which='minor', color='grey', linestyle='-', alpha=0.2)
-    p.tight_layout()
+    # p.tight_layout()
     if not plot:
         p.show()
     return plt
@@ -109,42 +113,36 @@ def plot_bar(y=None, x=None, xlabel=None, ylabel=None, title=None, col=None, leg
     return plt
 
 def plot_latency_ib():
-    # plot_line([[1,2,3]], [3,4,5], [[.1,.1,.1]])
     y_long_large = [[14.2,	14.8,	18.9,	29.7,	55.8,	112],
-                    [14.1,	14.6,	14.74,	14.95,	21,	45],
+                    [14.1,	14.6,	14.74,	14.95,	21,	    45],
                     [8.5,	8.5,	10.04,	10.2,	14.5,	29.59]]
-    y_long_small = [[29.99,29.3,29.67,30.4,29.64,28.9],
-                    [28,	27,	28,	28,	29,	29],
-                    [17,	17.2,	17.6,	17.4,	17.8,17]]
+    y_long_small = [[16.4,16.5,16.6,16.5,16.4,16.4],
+                    [16.2,16.3,16.1,16.3,16.3,16.25],
+                    [10.3,10.5,10.3,10.1,10,10.3]]
     y_short_large = [[3.94,	5.46,	10.9,	21.5,	43.53,	88.25],
                      [3.41,	3.56,	5.13,	8.32,	15.38,	41],
                      [2.64,	2.1,	2.73,	4.8,	8,	20.92]]
     y_short_small = [[5,	5.1,	5,	5.2,	5.3,	5.5],
                      [5,	5.1,	5.2,	5.1,	5.3,	5.4],
                      [2.8,	2.8,	2.8,	2.8,	2.9,	2.9]]
-    # y_short_small = [[29.7,	45.2,	71.68],
-    #                     [14.9,	17.6,	27.33],
-    #                     [10.2,	10.59,	13.8]]
+    fig = plt.figure(figsize=(18, 4), dpi=100)
 
-    fig = plt.figure(figsize=(14, 4), dpi=100)
-
-    plt.subplot2grid((1,27), (0, 0), colspan=6)
+    plt.subplot2grid((1,35), (0, 0), colspan=8)
     plot_line(y_long_large, x=x_small, legend=["TCP", "IPoIB", "IB"], title="Top. A Large Messages", plot=plt, ticks=xlabels_large)
 
-    plt.subplot2grid((1,27), (0, 7), colspan=6)
-    plot_line(y_long_small, x=x_small, xlabel="Message size bytes", legend=["TCP", "IPoIB", "IB"], title="Top. A Small Messages", plot=plt, ticks=xlabels_small)
+    plt.subplot2grid((1,35), (0, 9), colspan=8)
+    plot_line(y_long_small, x=x_small, xlabel="Message size bytes", legend=["TCP", "IPoIB", "IB"], title="Top. A Small Messages", plot=plt, ticks=xlabels_small, ymin=8, ymax=20)
 
-    plt.subplot2grid((1,27), (0, 14), colspan=6)
+    plt.subplot2grid((1,35), (0, 18), colspan=8)
     plot_line(y_short_large, x=x_small, legend=["TCP", "IPoIB", "IB"], title="Top. B Large Messages", plot=plt, ticks=xlabels_large)
 
-    plt.subplot2grid((1,27), (0, 21), colspan=6)
-    plot_line(y_short_small, x=x_small, xlabel="Message size bytes", legend=["TCP", "IPoIB", "IB"], title="Top. B Small Messages", plot=plt, ticks=xlabels_small)
-    plt.show()
-
+    plt.subplot2grid((1,35), (0, 27), colspan=8)
+    plot_line(y_short_small, x=x_small, xlabel="Message size bytes", legend=["TCP", "IPoIB", "IB"], title="Top. B Small Messages", plot=plt, ticks=xlabels_small, ymin=2, ymax=7)
+    plt.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.2)
+    fig.tight_layout()
     plt.show()
 
 def plot_latency_parallel_ib():
-    # plot_line([[1,2,3]], [3,4,5], [[.1,.1,.1]])
     y_long_large = [[29.7,	45.2,	71.68],
                         [14.9,	17.6,	27.33],
                         [10.2,	10.59,	13.8]]
@@ -162,19 +160,20 @@ def plot_latency_parallel_ib():
                      [3.7,	5.1,	8.4],
                     [2.5,	2.8,	4.2]]
 
-    fig = plt.figure(figsize=(14, 4), dpi=100)
+    fig = plt.figure(figsize=(18, 4), dpi=100)
 
-    plt.subplot2grid((1,27), (0, 0), colspan=6)
+    plt.subplot2grid((1,35), (0, 0), colspan=8)
     plot_bar(y_long_large, x=[2,4,8], xlabel="Parallel", legend=["TCP", "IPoIB", "IB"], title="Top. A Large Messages", plot=plt, y_std=y_long_large_std)
 
-    plt.subplot2grid((1,27), (0, 7), colspan=6)
+    plt.subplot2grid((1,35), (0, 9), colspan=8)
     plot_bar(y_long_small, x=[2,4,8], xlabel="Parallel", legend=["TCP", "IPoIB", "IB"], title="Top. A Small Messages", plot=plt, y_std=y_long_large_std)
 
-    plt.subplot2grid((1,27), (0, 14), colspan=6)
-    plot_bar(y_short_large, x=[2,4,8], xlabel="Parallel", legend=["TCP", "IPoIB", "IB"], title="Top. B Large Messages", plot=plt, y_std=y_long_large_std)
+    plt.subplot2grid((1,35), (0, 18), colspan=8)
+    plot_bar(y_short_large, x=[8,16,32], xlabel="Parallel", legend=["TCP", "IPoIB", "IB"], title="Top. B Large Messages", plot=plt, y_std=y_long_large_std)
 
-    plt.subplot2grid((1,27), (0, 21), colspan=6)
-    plot_bar(y_short_small, x=[2,4,8], xlabel="Parallel", legend=["TCP", "IPoIB", "IB"], title="Top. B Small Messages",plot=plt, y_std=y_long_large_std)
+    plt.subplot2grid((1,35), (0, 27), colspan=8)
+    plot_bar(y_short_small, x=[8,16,32], xlabel="Parallel", legend=["TCP", "IPoIB", "IB"], title="Top. B Small Messages",plot=plt, y_std=y_long_large_std)
+    plt.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.2)
     plt.show()
 
 
