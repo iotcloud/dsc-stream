@@ -298,25 +298,75 @@ def plot_omni():
     plot_line(long, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="a) Top. A Large Messages", plot=plt, ticks=xlabels_large, ylabel="Latency (ms) Log", logy=True)
 
     plt.subplot2grid((1,35), (0, 9), colspan=8)
-    plot_bar(long_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="b) Top. A Parallel", plot=plt, ylabel="Latency (ms)", y_std=long_parallel_std)
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plot_line(long_short, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Small Messages", plot=plt, ticks=xlabels_large, logy=False, ymin=20, ymax=55)
 
     plt.subplot2grid((1,35), (0, 18), colspan=8)
-    plot_line(long, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Large Messages", plot=plt, ticks=xlabels_large, ylabel="Latency (ms) Log", logy=True)
+    plot_bar(long_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="b) Top. A Large Messages", plot=plt, ylabel="Latency (ms)", y_std=long_parallel_std)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     plt.subplot2grid((1,35), (0, 27), colspan=8)
-    plot_bar(long_short_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="d) Top. A Parallel", plot=plt, ylabel="Latency (ms)", y_std=long_short_parallel_std)
+    plot_bar(long_short_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="d) Top. A Short Messages", plot=plt, y_std=long_short_parallel_std)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     plt.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.2)
     fig.tight_layout()
     plt.show()
 
+def plot_omni2():
+    long = [[29.5,	36.01,	50.7,	74.2,	120.1,	297],
+            [27.3,	32.4,	41.8,	57.8,	89.1,	248.1],
+            [16.2,	17.7,	22.5,	31.2,	46.9,	137.1]]
+
+    long_parallel = [[74,	116,	213],
+                     [57.8,	96.4,	184],
+                     [31.2,	51.1,	100.3]]
+    long_parallel_std = [[8.1,	22.5,	65.7],
+                         [6.2,	14.4,	38],
+                         [4.4,	11.1,	22.4]
+                         ]
+
+    long_short = [[40,	40.58,	39.25,	40.7,	41.22,	42.5],
+                  [38.3,	38.58,	39.1,	39.4,	40.6,	40.6],
+                  [25.5,	25.9,	25.6,	25.4,	25.8,	26.5]]
+
+    long_short_parallel = [[40.7,	79.6,	151],
+                           [39.4,	79.5,	151],
+                           [26.4,	49.8,	98.12]]
+    long_short_parallel_std = [[5.5,	13.5,	25],
+                               [5.1,	11.8,	25.2],
+                               [5.1,	11.5,	18.4]]
+
+    fig = plt.figure(figsize=(18, 4), dpi=100)
+
+    plt.subplot2grid((1,35), (0, 0), colspan=8)
+    plot_line(long, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="a) Top. A Large Messages", plot=plt, ticks=xlabels_large, ylabel="Latency (ms) Log", logy=True)
+
+    plt.subplot2grid((1,35), (0, 9), colspan=8)
+    plot_line(long_short, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Small Messages", plot=plt, ticks=xlabels_large, logy=False, ymin=20, ymax=55)
+
+    plt.subplot2grid((1,35), (0, 18), colspan=8)
+    plot_bar(long_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="b) Top. A Large Messages", plot=plt, ylabel="Latency (ms)", y_std=long_parallel_std)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplot2grid((1,35), (0, 27), colspan=8)
+    plot_bar(long_short_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="d) Top. A Short Messages", plot=plt, y_std=long_short_parallel_std)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.2)
+    fig.tight_layout()
+    plt.show()
+
+def proto_buf():
+    y_large = [[664, 1246, 2744, 4614, 8136, 15343], [1193, 1492, 2005, 3633, 7084, 22624], [2597, 4954, 9893, 20034, 43722, 92636]]
+    y_small = [[1048, 1152, 1133, 1255, 1234, 1300], [2881,2848,2901,2915,2956,2959]]
+
+    fig = plt.figure(figsize=(18, 4), dpi=100)
+
+
 def main():
-    plot_latency_ib()
-    plot_latency_parallel_ib()
-    plot_yahoo_percentages()
-    plot_inflight()
-    plot_throughput()
+    # plot_latency_ib()
+    # plot_latency_parallel_ib()
+    # plot_yahoo_percentages()
+    # plot_inflight()
+    # plot_throughput()
     plot_omni()
 
 if __name__ == "__main__":
