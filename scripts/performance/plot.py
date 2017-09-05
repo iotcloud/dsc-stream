@@ -298,10 +298,10 @@ def plot_omni():
     plot_line(long, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="a) Top. A Large Messages", plot=plt, ticks=xlabels_large, ylabel="Latency (ms) Log", logy=True)
 
     plt.subplot2grid((1,35), (0, 9), colspan=8)
-    plot_line(long_short, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Small Messages", plot=plt, ticks=xlabels_large, logy=False, ymin=20, ymax=55)
+    plot_line(long_short, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="b) Top. A Small Messages", plot=plt, ticks=xlabels_large, logy=False, ymin=20, ymax=55, xlabel="Message size in bytes")
 
     plt.subplot2grid((1,35), (0, 18), colspan=8)
-    plot_bar(long_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="b) Top. A Large Messages", plot=plt, ylabel="Latency (ms)", y_std=long_parallel_std)
+    plot_bar(long_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Large Messages", plot=plt, ylabel="Latency (ms)", y_std=long_parallel_std)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     plt.subplot2grid((1,35), (0, 27), colspan=8)
@@ -341,7 +341,7 @@ def plot_omni2():
     plot_line(long, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="a) Top. A Large Messages", plot=plt, ticks=xlabels_large, ylabel="Latency (ms) Log", logy=True)
 
     plt.subplot2grid((1,35), (0, 9), colspan=8)
-    plot_line(long_short, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Small Messages", plot=plt, ticks=xlabels_large, logy=False, ymin=20, ymax=55)
+    plot_line(long_short, x=x_small, legend=["TCP", "IPoFabric", "Omni-path"], title="c) Top. A Small Messages", plot=plt, ticks=xlabels_large, logy=False, ymin=20, ymax=55, xlabel="Message size in bytes")
 
     plt.subplot2grid((1,35), (0, 18), colspan=8)
     plot_bar(long_parallel, x=[2,4,8], xlabel="Parallelism", legend=["TCP", "IPoFabric", "Omni-path"], title="b) Top. A Large Messages", plot=plt, ylabel="Latency (ms)", y_std=long_parallel_std)
@@ -355,11 +355,20 @@ def plot_omni2():
     plt.show()
 
 def proto_buf():
-    y_large = [[664, 1246, 2744, 4614, 8136, 15343], [1193, 1492, 2005, 3633, 7084, 22624], [2597, 4954, 9893, 20034, 43722, 92636]]
-    y_small = [[1048, 1152, 1133, 1255, 1234, 1300], [2881,2848,2901,2915,2956,2959]]
+    y_large = [[664, 1052, 2082, 3487, 5994, 11838], [1193, 1492, 2400, 3633, 7084, 22624], [2597, 4954, 9893, 20034, 43722, 92636]]
+    y_small = [[984, 1020, 1040, 1076, 1030, 1055], [2881,2848,2901,2915,2956,2959], [7288,7446,7556,7348,7647,7881]]
 
-    fig = plt.figure(figsize=(18, 4), dpi=100)
+    fig = plt.figure(figsize=(4, 6), dpi=100)
+    plt.subplot2grid((9,8), (0, 0), colspan=8, rowspan=4)
+    plot_line(y_large, x=x_small, legend=["Proto-Serialize", "IB", "TCP"], title="a) Large Messages", plot=plt, ticks=xlabels_large, ylabel="Total time (ms) Log", logy=True, legendloc="lower bottom")
 
+    plt.subplot2grid((9,8), (5, 0), colspan=8, rowspan=4)
+    plot_line(y_small, x=x_small, legend=["Proto-Serialize", "IB", "TCP"], title="b) Small Messages", plot=plt, ticks=xlabels_large, logy=False, xlabel="Message size in bytes", legendloc="center right", ylabel="Total time (ms)", ymax=9000)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.2)
+    fig.tight_layout()
+    plt.show()
 
 def main():
     # plot_latency_ib()
@@ -368,6 +377,7 @@ def main():
     # plot_inflight()
     # plot_throughput()
     plot_omni()
+    proto_buf()
 
 if __name__ == "__main__":
     main()
