@@ -69,9 +69,9 @@ def calculate_bins(file_name, messages, pattern, message_size):
             final_numbers.append(index___)
         final_numbers.append((numbers[size - 1] + 0.0) / 1000000)
 
-        # print final_numbers
-        # print pattern, ",", message_size, ",", avg_of_numbers, ",", std_of_numbers, ",", final_numbers[
-        #     len(final_numbers) - 2]
+        print final_numbers
+        print pattern, ",", message_size, ",", avg_of_numbers, ",", std_of_numbers, ",", final_numbers[
+            len(final_numbers) - 2]
         # print final_numbers
         key = pattern + ", " + str(message_size)
 
@@ -113,24 +113,25 @@ def old_result():
 def main():
     print "VERBS"
     # ret = go_through_file('/home/supun/data/ib/ib_long_small', 'smallthroughputSpout')
-    ret = go_through_file('/home/supun/data/ib/ib_short_small', 'smallthroughputSpout')
+    ret = go_through_file('/home/supun/experiments/ib_long_small', 'smallthroughputSpout')
+    ret = go_through_file('/home/supun/experiments/ib_long_small_100', 'smallthroughputSpout')
     # ret = go_through_file('/home/supun/data/long_topology/verbs', 'largethroughputSpout')
     # ret = go_through_file('/home/supun/data/juliet/verbs', 'largethroughputSpout')
-    print_common(ret)
+    # print_common(ret)
     # go_through_file('/home/supun/data/KNL/verbs', 'largethroughputSpout')
     print "TCP"
     # ret = go_through_file('/home/supun/data/ib/tcp_long_small', 'smallthroughputSpout')
-    ret = go_through_file('/home/supun/data/ib/tcp_short_small', 'smallthroughputSpout')
-    # ret = go_through_file('/home/supun/data/long_topology/tcp', 'largethroughputSpout')
+    ret = go_through_file('/home/supun/experiments/tcp_long_small', 'smallthroughputSpout')
+    ret = go_through_file('/home/supun/experiments/tcp_long_small_100', 'smallthroughputSpout')
     # ret = go_through_file('/home/supun/data/juliet/tcp', 'largethroughputSpout')
-    print_common(ret)
+    # print_common(ret)
     # go_through_file('/home/supun/data/KNL/tcp', 'largethroughputSpout')
     print "IPIB"
     # ret = go_through_file('/home/supun/data/ib/ipib_long_small', 'smallthroughputSpout')
-    ret = go_through_file('/home/supun/data/ib/ipib_short_small', 'smallthroughputSpout')
+    # ret = go_through_file('/home/supun/data/ib/ipib_short_small', 'smallthroughputSpout')
     # ret = go_through_file('/home/supun/data/long_topology/ipib', 'largethroughputSpout')
     # ret = go_through_file('/home/supun/data/juliet/ipib', 'largethroughputSpout')
-    print_common(ret)
+    # print_common(ret)
     # go_through_file('/home/supun/data/KNL/ipib', 'largethroughputSpout')
 
 
